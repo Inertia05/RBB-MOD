@@ -181,7 +181,7 @@ def bombPatch(patchName, bombTypeArme, caliber, HE, HERadi, SupRadi, salvoLength
         
     out = """
     <!-- change property of PatchName -->
-   	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TAmmunition" name="PatchName">
+   	<ndfpatch ndf="pc\\ndf\patchable\gfx\everything.ndfbin" table="TAmmunition" name="PatchName">
        	<matchconditions>"""+conditions+"""
    		</matchconditions>
    		<changes>"""+changes+"""
@@ -193,6 +193,7 @@ def bombPatch(patchName, bombTypeArme, caliber, HE, HERadi, SupRadi, salvoLength
         
 def bombPatches(HESupplyFactor, HESupRadiFactor, CLUSSupplyFactor, CLUSSupRadiFactor):
     global xmlOutput
+    checkXmlOutputIsEmpty()
     xmlOutput += """<wargamepatch>"""
 
     HEBombWeights = [227,250,340,400,500]
@@ -296,7 +297,7 @@ def bombPatches(HESupplyFactor, HESupRadiFactor, CLUSSupplyFactor, CLUSSupRadiFa
                 
             out = """
     <!-- change property of PatchName -->
-   	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TAmmunition" name="PatchName">
+   	<ndfpatch ndf="pc\\ndf\patchable\gfx\everything.ndfbin" table="TAmmunition" name="PatchName">
        	<matchconditions>"""+conditions+"""
    		</matchconditions>
    		<changes>"""+changes+"""
@@ -414,7 +415,7 @@ def GeneralPatch(table, patchName, conditions, changes):
     out = """
     
     <!-- change property of PatchName -->
-   	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table=\""""+table+"""\" name="PatchName">
+   	<ndfpatch ndf="pc\\ndf\patchable\gfx\everything.ndfbin" table=\""""+table+"""\" name="PatchName">
        	<matchconditions>
            	"""+conditions+"""
    		</matchconditions>
@@ -425,7 +426,6 @@ def GeneralPatch(table, patchName, conditions, changes):
    	</ndfpatch>\n"""
     out = out.replace("PatchName", patchName)
     xmlOutput += out
-
     
 def TAmmuPatch(patchName, conditions, changes):
     global xmlOutput
@@ -433,7 +433,7 @@ def TAmmuPatch(patchName, conditions, changes):
     out = """
     
     <!-- change property of PatchName -->
-   	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TAmmunition" name="PatchName">
+   	<ndfpatch ndf="pc\\ndf\patchable\gfx\everything.ndfbin" table="TAmmunition" name="PatchName">
        	<matchconditions>
             """+conditions+"""
    		</matchconditions>
@@ -479,7 +479,7 @@ def GeneralConditions(**kwargs):
         ret += AddSpaceTo2Var(prefix, variable, connec, value, suffix)
     return ret
 
-def ReferenceCondition(table, tableConditions):
+def GeneralConditionReference(table, tableConditions):
     ret = ""
     ret += """<matchcondition type="references" table=\""""+table+"""">
 				<matchconditions>
@@ -788,6 +788,10 @@ def convertNumberForCondition(number):
     else:
         return number
 
-
+def checkXmlOutputIsEmpty():
+    global xmlOutput
+    if xmlOutput != "":
+        raise ValueError("xmlOutput is not empty")
+    
 
 
