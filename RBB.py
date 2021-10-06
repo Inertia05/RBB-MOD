@@ -315,7 +315,7 @@ def priceBuff(price, factor):
     return newPrice
 
 def pricePatch(units, priceFactor = 1, amountFactor = 1):
-    global xmlOutput
+
     """
     unitPriceListExample = {"M/727 HAWK"         :["306F4AC8805C0000",40,[0,8,6,0,0]],
                             "AMX-30 ROLAND"      :["0EB6581907000000",45,[0,8,6,0,0]],
@@ -323,30 +323,63 @@ def pricePatch(units, priceFactor = 1, amountFactor = 1):
                             }
     """
     for unit in units.keys():
-        amounts = ""
+        amounts = "\n	   	   	"
         for i in range(5):
             decimalAmount = units[unit][2][i]*amountFactor
             newAmount = int(decimalAmount + (1-decimalAmount%1)) if decimalAmount%1>=0.5 else int(decimalAmount)
             if newAmount < 0:
                 raise ValueError("Amount cannot be negative.")
-            amounts += """<change operation="set" property="MaxDeployableAmount" key=\""""
-            amounts += str(i)
-            amounts += """\" type="Int32">"""+str(newAmount)+"""</change>
-            """
+            amounts += DictChange(prop = "MaxDeployableAmount", 
+                                  key = i, 
+                                  typeValuePair = ["Int32", newAmount])
+            
         price = str(priceBuff(units[unit][1],priceFactor))
-        out = """
-    <!-- change price of PatchName-->
-	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TUniteAuSolDescriptor" name="PatchName">
-		<matchconditions>
-			<matchcondition type="property" property="NameInMenuToken">"""+units[unit][0]+"""</matchcondition>
-		</matchconditions>
-		<changes>
-			<change operation="set" property="ProductionPrice" key="0" type="Int32">"""+price+"""</change>
-            """+amounts+"""		
-        </changes>
-	</ndfpatch>\n"""
-        out = out.replace("PatchName", unit)
-        xmlOutput += out
+        
+        GeneralPatch(table = "TUniteAuSolDescriptor",
+                     patchName = " price of "+unit, 
+                     conditions = GeneralConditions(NameInMenuToken = units[unit][0]),
+                     changes = DictChange(prop = "ProductionPrice", 
+                                          key = 0, 
+                                          typeValuePair = ["Int32",price])+amounts)
+
+        
+def pricePatchSingle(patchName, unitData, priceFactor = 1, amountFactor = 1):
+    global xmlOutput
+    """
+    unitData = {"hash"  : "306F4AC8805C0000",
+                "price" : 40,
+                "amount": [0,8,6,0,0]}
+    """
+    unitHash = unitData["hash"]
+    unitPrice = unitData["price"]
+    unitAmountData = unitData["amount"]
+    amounts = ""
+    for i in range(5):
+        decimalAmount = unitAmountData[i]*amountFactor
+        newAmount = int(decimalAmount + (1-decimalAmount%1)) if decimalAmount%1>=0.5 else int(decimalAmount)
+        if newAmount < 0:
+            raise ValueError("Amount cannot be negative.")
+        amounts += DictChange(prop = "MaxDeployableAmount", 
+                              key = i, 
+                              typeValuePair = ["Int32", newAmount])
+        
+    price = str(priceBuff(unitPrice,priceFactor))
+    
+    GeneralPatch(table = "TUniteAuSolDescriptor",
+                 patchName = patchName, 
+                 conditions = GeneralConditions(NameInMenuToken = unitHash),
+                 changes = DictChange(prop = "ProductionPrice", 
+                                      key = 0, 
+                                      typeValuePair = ["Int32",price])+amounts)
+    
+def DictChange(prop, key, typeValuePair):
+    ret = ""
+    ret += ("""<change operation="set" property=\""""
+    +prop+"""\" key=\""""
+    +str(key)+"""\" type=\""""
+    +typeValuePair[0]+"""\">"""
+    +str(typeValuePair[1])+"""</change>\n	   	   	""")
+    return ret
         
 def tankAmount(price):
     priceLine = [5,25,40,   50,60,70,   90,110,125,     140,150,165,    180]
@@ -383,11 +416,11 @@ def GeneralPatch(table, patchName, conditions, changes):
     <!-- change property of PatchName -->
    	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table=\""""+table+"""\" name="PatchName">
        	<matchconditions>
-            """+conditions+"""
+           	"""+conditions+"""
    		</matchconditions>
            
    		<changes>
-            """+changes+"""
+           	"""+changes+"""
    		</changes>
    	</ndfpatch>\n"""
     out = out.replace("PatchName", patchName)
@@ -480,7 +513,8 @@ def TAmmuConditions(acc = None, unitHash = [None,None], **kwargs):
 					<matchcondition type="property" property="HitProbability">"""+str(acc[0])+"""</matchcondition>
                     <matchcondition type="property" property="HitProbabilityWhileMoving">"""+str(acc[1])+"""</matchcondition>
 				</matchconditions>
-            </matchcondition>\n"""
+            </matchcondition>\n
+            """
     if unitHash[0]:
         turretType = {"axis"    :"TTurretTwoAxisDescriptor",
                       "turret"  :"TTurretUnitDescriptor"}
@@ -508,10 +542,7 @@ def TAmmuConditions(acc = None, unitHash = [None,None], **kwargs):
 			</matchcondition>\n"""
     return ret
 
-def DictChange(prop, key, typeValuePair):
-    ret = ""
-    ret += """<change operation="set" property=\""""+prop+"""\" key=\""""+key+"""\" type=\""""+typeValuePair[0]+"""\">"""+str(typeValuePair[1])+"""</change>"""
-    return ret
+
 
 def GeneralChanges(**kwargs):
     ret = ""
@@ -541,7 +572,7 @@ def TAmmuChanges(acc = None, **kwargs):
 					</matchconditions>
 				</reference>
 		    </change>
-        """
+            """
     return ret
                         
 def Range(distance):
@@ -700,7 +731,62 @@ def addTabsBetweenLines(string, tabCount):
     return string
 
 
+def TAmmuConditionsROF(shotReload = None, shotFxReload  = None, salvoReload = None, 
+                       salvoUILength = None, salvoLength = None, 
+                       shotSimutane = None):
+    ret = ""
+    if not pandas.isna(shotReload):
+        ret += TAmmuConditions(TempsEntreDeuxTirs
+                               = convertNumberForCondition(shotReload))
+    if not pandas.isna(shotFxReload):
+        ret += TAmmuConditions(TempsEntreDeuxFx
+                               = convertNumberForCondition(shotFxReload))
+    if not pandas.isna(salvoReload):
+        ret += TAmmuConditions(TempsEntreDeuxSalves
+                               = convertNumberForCondition(salvoReload))
 
+    if not pandas.isna(salvoUILength):
+        if not salvoUILength.is_integer():
+            raise TypeError("salvoUILength = "+str(salvoUILength)+" must be int")
+        ret += TAmmuConditions(AffichageMunitionParSalve
+                               = convertNumberForCondition(salvoUILength))
+    if not pandas.isna(salvoLength):
+        if not salvoLength.is_integer():
+            raise TypeError("salvoLength = "+str(salvoLength)+" must be int")
+        ret += TAmmuConditions(NbTirParSalves
+                               = convertNumberForCondition(salvoLength))
+        
+    if not pandas.isna(shotSimutane):
+        if not shotSimutane.is_integer():
+            raise TypeError("shotSimutane = "+str(shotSimutane)+" must be int")
+        ret += TAmmuConditions(NbrProjectilesSimultanes
+                               = convertNumberForCondition(shotSimutane))
+    return ret
+
+        
+def intCheck(*args, **kwargs):
+    for arg in args:
+        if type(arg) != int:
+            raise TypeError(str(arg)+" must be int type")      
+    
+    for kwarg in kwargs.keys():
+        if type(kwargs[kwarg]) != int:
+            raise TypeError(kwarg+" must be int type")       
+            
+def floatCheck(*args, **kwargs):
+    for arg in args:
+        if type(arg) != float:
+            raise TypeError(str(arg)+" must be float type")      
+    
+    for kwarg in kwargs.keys():
+        if type(kwargs[kwarg]) != float:
+            raise TypeError(kwarg+" must be float type")      
+    
+def convertNumberForCondition(number):
+    if number.is_integer():
+        return int(number)
+    else:
+        return number
 
 
 
