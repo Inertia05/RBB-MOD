@@ -1,0 +1,273 @@
+<wargamepatch>
+	<!-- Make Sure cluster bomb Arme is HE -->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TAmmunition" name="Cluster Bomb use HE Quick fix">
+		<matchconditions>
+			<matchcondition type="property" property="TypeArme">A74C337ADC000000</matchcondition>
+		</matchconditions>
+		<changes>
+			<change operation="set" property="Arme" type="UInt32">3</change>
+		</changes>
+	</ndfpatch>
+
+	<!-- change jet altitude from 1050(1500) to 2800 -->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TMouvementHandlerAirplaneDescriptor" name="1500 Jet Altitude">
+		<matchconditions>
+			<matchcondition type="property" property="FlyingAltitude">78000</matchcondition>
+		</matchconditions>
+		<changes>
+			<change operation="set" property="FlyingAltitude" type="Float32">208000</change>
+			<!--  change operation="set" property="ProductionPrice" key="0" type="Int32">5</change>     -->
+		</changes>
+	</ndfpatch>
+
+	<!-- change jet altitude from 875(1250) to 2625 -->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TMouvementHandlerAirplaneDescriptor" name="1250 Jet Altitude">
+		<matchconditions>
+			<matchcondition type="property" property="FlyingAltitude">65000</matchcondition>
+		</matchconditions>
+		<changes>
+			<change operation="set" property="FlyingAltitude" type="Float32">195000</change>
+			<!--  change operation="set" property="ProductionPrice" key="0" type="Int32">5</change>     -->
+		</changes>
+	</ndfpatch>
+
+	<!-- change jet altitude from 700(1000) to 1400 -->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TMouvementHandlerAirplaneDescriptor" name="1000 Jet Altitude">
+		<matchconditions>
+			<matchcondition type="property" property="FlyingAltitude">52000</matchcondition>
+		</matchconditions>
+		<changes>
+			<change operation="set" property="FlyingAltitude" type="Float32">104000</change>
+			<!--  change operation="set" property="ProductionPrice" key="0" type="Int32">5</change>     -->
+		</changes>
+	</ndfpatch>
+
+	<!-- change jet altitude from 525(750) to 1050 -->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TMouvementHandlerAirplaneDescriptor" name="750 Jet Altitude">
+		<matchconditions>
+			<matchcondition type="property" property="FlyingAltitude">39000</matchcondition>
+		</matchconditions>
+		<changes>
+			<change operation="set" property="FlyingAltitude" type="Float32">78000</change>
+			<!--  change operation="set" property="ProductionPrice" key="0" type="Int32">5</change>     -->
+		</changes>
+	</ndfpatch>
+
+	<!-- change jet altitude from 350(500) to 700 -->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TMouvementHandlerAirplaneDescriptor" name="500 Jet Altitude">
+		<matchconditions>
+			<matchcondition type="property" property="FlyingAltitude">26000</matchcondition>
+		</matchconditions>
+		<changes>
+			<change operation="set" property="FlyingAltitude" type="Float32">52000</change>
+			<!--  change operation="set" property="ProductionPrice" key="0" type="Int32">5</change>     -->
+		</changes>
+	</ndfpatch>
+
+	<!-- change F117/B-5/Interceptor start Altitude from 1050(1500) to 2100, 2 instances shared -->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TPositionModuleDescriptor" name="F117/B-5/Interceptor start Altitude">
+		<matchconditions>
+			<matchcondition type="property" property="LowAltitudeFlyingAltitude">78000</matchcondition>
+		</matchconditions>
+		<changes>
+			<change operation="set" property="LowAltitudeFlyingAltitude" type="Float32">156000</change>
+			<!--  change operation="set" property="ProductionPrice" key="0" type="Int32">5</change>     -->
+		</changes>
+	</ndfpatch>
+
+	<!-- change Jet start Altitude from 700(1000) to 1400 -->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TPositionModuleDescriptor" name="1000 start Altitude">
+		<matchconditions>
+			<matchcondition type="property" property="LowAltitudeFlyingAltitude">52000</matchcondition>
+		</matchconditions>
+		<changes>
+			<change operation="set" property="LowAltitudeFlyingAltitude" type="Float32">104000</change>
+			<!--  change operation="set" property="ProductionPrice" key="0" type="Int32">5</change>     -->
+		</changes>
+	</ndfpatch>
+
+	<!-- change Jet start Altitude from 525(700) to 1050 -->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TPositionModuleDescriptor" name="700 start Altitude">
+		<matchconditions>
+			<matchcondition type="property" property="LowAltitudeFlyingAltitude">39000</matchcondition>
+		</matchconditions>
+		<changes>
+			<change operation="set" property="LowAltitudeFlyingAltitude" type="Float32">78000</change>
+			<!--  change operation="set" property="ProductionPrice" key="0" type="Int32">5</change>     -->
+		</changes>
+	</ndfpatch>
+
+	<!-- change helo altitude from 105(150) to 350 -->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TPositionModuleDescriptor" name="105 Helo Altitude">
+		<matchconditions>
+			<matchcondition type="property" property="LowAltitudeFlyingAltitude">7800</matchcondition>
+			<matchcondition type="property" property="ClampOutMap">null</matchcondition>
+		</matchconditions>
+		<changes>
+			<change operation="set" property="LowAltitudeFlyingAltitude" type="Float32">26000</change>
+			<!--  change operation="set" property="ProductionPrice" key="0" type="Int32">5</change>     -->
+		</changes>
+	</ndfpatch>
+
+	<!-- change property of AIM-54 -->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TAmmunition" name="F-14 AIM-54">
+		<matchconditions>
+			<matchcondition type="property" property="Name">85714D0B00000000</matchcondition>
+		</matchconditions>
+		<changes>
+			<change operation="set" property="TempsDeVisee" type="Float32">1</change>
+			<change operation="null" property="PorteeMaximaleTBA"/>
+			<change operation="null" property="PorteeMinimaleTBA"/>
+			<!-- Revert the helo range change by the 2100 AAM patch above -->
+			<change operation="set" property="TempsEntreDeuxTirs" type="Float32">0.2</change>
+      		<change operation="set" property="TempsEntreDeuxFx" type="Float32">0.2</change>
+			<change operation="set" property="TempsEntreDeuxSalves" type="Float32">3</change>
+			<!--  change operation="set" property="ProductionPrice" key="0" type="Int32">5</change>     -->
+		</changes>
+	</ndfpatch>
+
+	<!-- change property of R-37 -->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TAmmunition" name="MiG-31M R-37">
+		<matchconditions>
+			<matchcondition type="property" property="Name">08C1010000000000</matchcondition>
+		</matchconditions>
+		<changes>
+			<change operation="set" property="TempsDeVisee" type="Float32">1</change>
+			<change operation="null" property="PorteeMaximaleTBA"/>
+			<change operation="null" property="PorteeMinimaleTBA"/>
+			<!-- Revert the helo range change by the 2100 AAM patch above -->
+			<change operation="set" property="TempsEntreDeuxTirs" type="Float32">0.2</change>
+      		<change operation="set" property="TempsEntreDeuxFx" type="Float32">0.2</change>
+			<change operation="set" property="TempsEntreDeuxSalves" type="Float32">3</change>
+			<!--  change operation="set" property="ProductionPrice" key="0" type="Int32">5</change>     -->
+		</changes>
+	</ndfpatch>
+
+	
+	<!-- change property of R-33 -->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TAmmunition" name="MiG-31 R-33">
+		<matchconditions>
+			<matchcondition type="property" property="Name">0F41700000000000</matchcondition>
+		</matchconditions>
+		<changes>
+			<change operation="set" property="TempsDeVisee" type="Float32">1</change>
+			<change operation="null" property="PorteeMaximaleTBA"/>
+			<change operation="null" property="PorteeMinimaleTBA"/>
+			<!-- Revert the helo range change by the 2100 AAM patch above -->
+
+			<change operation="set" property="TempsEntreDeuxTirs" type="Float32">0.2</change>
+      		<change operation="set" property="TempsEntreDeuxFx" type="Float32">0.2</change>
+			<change operation="set" property="IsFireAndForget"  type="Boolean">True</change>
+			<change operation="set" property="TempsEntreDeuxSalves" type="Float32">2</change>
+			<change property="NbTirParSalves" operation="set" type="UInt32">2</change>
+      		<change property="AffichageMunitionParSalve" operation="set" type="UInt32">2</change>
+
+
+			<!--  change operation="set" property="ProductionPrice" key="0" type="Int32">5</change>     -->
+		</changes>
+	</ndfpatch>
+
+	
+	<!-- change MiG-31 R-33's salvo count -->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TWeaponManagerModuleDescriptor" name="MiG-31 Weapon Manager">
+		<matchconditions>
+			<matchcondition type="property" property="_ShortDatabaseName">WeaponDescriptor_Unit_Mig31_Foxhound</matchcondition>
+		</matchconditions>
+		<changes>
+			<change operation="set" property="Salves" key="3" type="Int32">2</change>
+
+			<!--  change operation="set" property="ProductionPrice" key="0" type="Int32">5</change>     -->
+		</changes>
+	</ndfpatch>
+
+
+	<!-- change property of 340kg bomb -->
+	<!-- watch for NPLM and cluster with same weight -->
+
+	<!-- change property of 400kg bomb -->
+
+
+
+	<!-- change property of 500kg bomb -->
+
+	<!-- change property of 1000kg GBU-27/B Paveway III bomb F117-->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TAmmunition" name="F117 1000kg LGB">
+		<matchconditions>
+			<matchcondition type="property" property="Name">81F0311100000000</matchcondition>
+		</matchconditions>
+		<changes>
+			<change operation="set" property="TempsEntreDeuxSalves" type="Float32">3</change>
+			<change property="NbTirParSalves" operation="set" type="UInt32">1</change>
+      		<change property="AffichageMunitionParSalve" operation="set" type="UInt32">1</change>
+			<change property="SupplyCost" operation="set" type="UInt32">4000</change>
+			<!--  change operation="set" property="ProductionPrice" key="0" type="Int32">5</change>     -->
+		</changes>
+	</ndfpatch>
+
+	<!-- change F117 LGB's salvo count -->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TWeaponManagerModuleDescriptor" name="F117 Weapon Manager">
+		<matchconditions>
+			<matchcondition type="property" property="_ShortDatabaseName">WeaponDescriptor_Unit_F117_Nighthawk</matchcondition>
+		</matchconditions>
+		<changes>
+			<change operation="set" property="Salves" key="2" type="Int32">2</change>
+
+			<!--  change operation="set" property="ProductionPrice" key="0" type="Int32">5</change>     -->
+		</changes>
+	</ndfpatch>
+
+	<!-- change F117 LGB Turret's min pitch -->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TTurretUnitDescriptor" name="F117 LGB Turret">
+		<matchconditions>
+			<matchcondition type="referencedby" table="TWeaponManagerModuleDescriptor">
+				<matchconditions>
+					<matchcondition type="property" property="_ShortDatabaseName">WeaponDescriptor_Unit_F117_Nighthawk</matchcondition>
+				</matchconditions>
+			</matchcondition>
+		</matchconditions>
+		<changes>
+			<change operation="set" property="AngleRotationMinPitch" type="Float32">-0.78</change>
+			<!--  change operation="set" property="ProductionPrice" key="0" type="Int32">5</change>     -->
+		</changes>
+	</ndfpatch>
+
+	<!-- change B-5 Turret's min pitch -->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TTurretTwoAxisDescriptor" name="B-5 Tail Gun Turret">
+		<matchconditions>
+			<matchcondition type="referencedby" table="TWeaponManagerModuleDescriptor">
+				<matchconditions>
+					<matchcondition type="property" property="_ShortDatabaseName">WeaponDescriptor_Unit_H5_NK</matchcondition>
+				</matchconditions>
+			</matchcondition>
+		</matchconditions>
+		<changes>
+			<change operation="set" property="AngleRotationMinPitch" type="Float32">-1.5</change>
+			<!--  change operation="set" property="ProductionPrice" key="0" type="Int32">5</change>     -->
+		</changes>
+	</ndfpatch>
+
+
+	<!-- change price of 2800m F117-->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TUniteAuSolDescriptor" name="F117 price">
+		<matchconditions>
+			<matchcondition type="property" property="NameInMenuToken">79CBBA1822081000</matchcondition>
+		</matchconditions>
+		<changes>
+			<change operation="set" property="ProductionPrice" key="0" type="Int32">200</change>
+			<!--  change operation="set" property="ProductionPrice" key="0" type="Int32">5</change>     -->
+		</changes>
+	</ndfpatch>
+
+	<!-- change property of 1000kg bomb -->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TAmmunition" name="1000kg bomb">
+		<matchconditions>
+			<matchcondition type="property" property="Caliber">2C1C048100000000</matchcondition>
+		</matchconditions>
+		<changes>
+			<change operation="set" property="RadiusSplashSuppressDamages" type="Float32">63024</change>
+			<change operation="set" property="RadiusSplashPhysicalDamages" type="Float32">31512</change>
+			<change operation="set" property="PhysicalDamages" type="Float32">38</change>
+			<!--  change operation="set" property="ProductionPrice" key="0" type="Int32">5</change>     -->
+		</changes>
+	</ndfpatch>
+</wargamepatch>

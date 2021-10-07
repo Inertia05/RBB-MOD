@@ -1,0 +1,133 @@
+<wargamepatch>
+	<!-- change Supply of the FOB -->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TModuleModernWarfareSupplyDescriptor" name="Supply of the FOB">
+		<matchconditions>
+			<matchcondition type="referencedby" table="TModuleSelector">
+				<matchconditions>
+					<matchcondition type="referencedby" table="TUniteDescriptor">
+						<matchconditions>
+							<matchcondition type="property" property="NameInMenuToken">4C06010000000000</matchcondition>
+						</matchconditions>
+					</matchcondition>
+				</matchconditions>
+			</matchcondition>
+		</matchconditions>
+
+		<changes>
+			<change operation="set" property="SupplyCapacity" type="Float32">36000</change>
+		</changes>
+	</ndfpatch>
+
+
+	<!-- change Kokon on Mi-35 -->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TMountedWeaponDescriptor" name="Mi-35 Kokon to ATAKA">
+		<matchconditions>
+			<matchcondition type="references" table="TAmmunition">
+				<matchconditions>
+					<matchcondition type="property" property="Name">85205C0A00000000</matchcondition>
+				</matchconditions>
+			</matchcondition>
+
+			<matchcondition type="referencedby" table="TTurretUnitDescriptor">
+				<matchconditions>
+					<matchcondition type="referencedby" table="TWeaponManagerModuleDescriptor">
+						<matchconditions>
+							<matchcondition type="referencedby" table="TModuleSelector">
+								<matchconditions>
+									<matchcondition type="referencedby" table="TUniteAuSolDescriptor">
+										<matchconditions>
+											<matchcondition type="property" property="NameInMenuToken">06315D0000000000</matchcondition>
+										</matchconditions>
+									</matchcondition>
+								</matchconditions>
+							</matchcondition>
+						</matchconditions>
+					</matchcondition>
+				</matchconditions>
+			</matchcondition>
+		</matchconditions>
+
+		<changes>
+			<change operation="set" property="Ammunition" type="ObjectReference">
+				<reference table="TAmmunition">
+					<matchconditions>
+						<matchcondition type="property" property="Name">C1205C0A00000000</matchcondition>
+					</matchconditions>
+				</reference>
+      		</change>
+		</changes>
+	</ndfpatch>
+
+	<!-- change Musti UI on XA-180 MUSTI -->
+	<!-- <ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TMountedWeaponDescriptor" name="Musti UI">
+		<matchconditions>
+			<matchcondition type="references" table="TAmmunition">
+				<matchconditions>
+					<matchcondition type="property" property="Name">6E8EEB1700000000</matchcondition>
+					<matchcondition type="property" property="Arme">3</matchcondition>
+				</matchconditions>
+			</matchcondition>
+		</matchconditions>
+		<changes>
+			<change operation="set" property="SalvoStockIndex_ForInterface" type="Int32">2</change>
+		</changes>
+	</ndfpatch> -->
+
+	<!-- change F117 jet altitude from 1050(1500) to 2100 -->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TMouvementHandlerAirplaneDescriptor" name="F117 Jet Altitude">
+		<matchconditions>
+			<matchcondition type="referencedby" table="TModuleSelector">
+				<matchconditions>
+					<matchcondition type="referencedby" table="TUniteAuSolDescriptor">
+						<matchconditions>
+							<matchcondition type="property" property="NameInMenuToken">79CBBA1822081000</matchcondition>
+						</matchconditions>
+					</matchcondition>
+				</matchconditions>
+			</matchcondition>
+		</matchconditions>
+		<changes>
+			<change operation="set" property="FlyingAltitude" type="Float32">156000</change>
+			<!--  change operation="set" property="ProductionPrice" key="0" type="Int32">5</change>     -->
+		</changes>
+	</ndfpatch>
+
+	<!-- change B-5 jet altitude from 1050(1500) to 2100 -->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TMouvementHandlerAirplaneDescriptor" name="B-5 Jet Altitude">
+		<matchconditions>
+			<matchcondition type="referencedby" table="TModuleSelector">
+				<matchconditions>
+					<matchcondition type="referencedby" table="TUniteAuSolDescriptor">
+						<matchconditions>
+							<matchcondition type="property" property="NameInMenuToken">15561A1200000000</matchcondition>
+						</matchconditions>
+					</matchcondition>
+				</matchconditions>
+			</matchcondition>
+		</matchconditions>
+		<changes>
+			<change operation="set" property="FlyingAltitude" type="Float32">156000</change>
+			<!--  change operation="set" property="ProductionPrice" key="0" type="Int32">5</change>     -->
+		</changes>
+	</ndfpatch>
+
+	<!-- change AVIA-28 jet altitude from 1050(1500) to 2100 -->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TMouvementHandlerAirplaneDescriptor" name="AVIA-28 Jet Altitude">
+		<matchconditions>
+			<matchcondition type="referencedby" table="TModuleSelector">
+				<matchconditions>
+					<matchcondition type="referencedby" table="TUniteAuSolDescriptor">
+						<matchconditions>
+							<matchcondition type="property" property="NameInMenuToken">C960BAFB02000000</matchcondition>
+						</matchconditions>
+					</matchcondition>
+				</matchconditions>
+			</matchcondition>
+		</matchconditions>
+		<changes>
+			<change operation="set" property="FlyingAltitude" type="Float32">156000</change>
+			<!--  change operation="set" property="ProductionPrice" key="0" type="Int32">5</change>     -->
+		</changes>
+	</ndfpatch>
+    
+</wargamepatch>
