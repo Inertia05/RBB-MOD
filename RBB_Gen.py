@@ -32,7 +32,7 @@ RP.RBB.XMLPatch("RBB-TAmmuRedeployable")#OneWay
 
 #RBB-Air-HandWritten.xml #OneWay
 
-#RBB-ReferencedBy.xml #Content: B-5, AVIA-28, F-117 Altitude, FOB Supply, Mi-35's Kokon, Musti-UI
+#RBB-ReferencedBy.xml #Content: B-5, AVIA-28, F-117 Altitude, FOB Supply, Mi-35's Kokon, Musti-UI(commnented out)
 RP.TAmmuPatchesSAM()
 RP.RBB.XMLPatch("RBB-TAmmuSAM")
 
@@ -67,6 +67,8 @@ PreOneWayDeploy = "PreOneWayDeploy"
 CreateFinal = "RBB-Create-Final"
 HashChangeFinal = "RBB-HashChange-Final"
 PreNoReturn ="RBB-PreNoReturn"
+NoReturn_1 = "NoReturn-1"
+
 dire = """D:
 cd D:\WRD MOD\WGPatcher 2.4"""
 
@@ -86,13 +88,21 @@ renameCommand(initialNDFName.lower()+patched+patched+".dat", PreOneWayDeploy+".d
 
 +applyCommand(CreateFinal+".dat", [" RBB-TAmmuUniqueTankKEName.xml"])
 +renameCommand(CreateFinal.lower()+patched+".dat", HashChangeFinal+".dat")
-+applyCommand(HashChangeFinal+".dat",["RBB-TAmmuTankGuns.xml","RBB-TAmmuRedeployable.xml"])
-+renameCommand(HashChangeFinal.lower()+patched+".dat", PreNoReturn+".dat")  
-
-+applyCommand(PreNoReturn+".dat",["RBB-TAmmu.xml","RBB-TAmmuAllHETankGuns.xml","RBB-Air-HandWritten.xml"])
 #NOT Redeployable
 
-+renameCommand(PreNoReturn.lower()+patched+".dat", "RBB-V3.0.dat")  
++applyCommand(HashChangeFinal+".dat",["RBB-TAmmuTankGuns.xml","RBB-TAmmuRedeployable.xml"])
++renameCommand(HashChangeFinal.lower()+patched+".dat", PreNoReturn+".dat")  
+#NOT Redeployable
+
++applyCommand(PreNoReturn+".dat",["RBB-TAmmuAllHETankGuns.xml","RBB-Air-HandWritten.xml"])
++renameCommand(PreNoReturn.lower()+patched+".dat", NoReturn_1+".dat")  
+#NOT Redeployable
+
++applyCommand(NoReturn_1+".dat",["RBB-TAmmu.xml"])
++renameCommand(NoReturn_1.lower()+patched+".dat", "RBB-V3.0.dat")  
+#NOT Redeployable
+
+
 +
 """\n\n\n\nEND
 """)
