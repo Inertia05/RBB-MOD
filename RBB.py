@@ -80,7 +80,7 @@ AAMTypeArme = "D7B2000000000000"
 SAMTypeArme = "D7D2010000000000"
 
 NavalGunTypeArme = "B31E95BB89010000"
-NavalAutocannon = "74AE2FE56E620000"
+NavalAutocannonTypeArme = "74AE2FE56E620000"
 AutocannonTypeArme = "F46CA274AE2F0000"
 TwinAutocannonTypeArme = "74AE2FE5ECF21E00"
 QuadAutocannonTypeArme = "74AE2F656AEA1B00"
@@ -330,7 +330,7 @@ def pricePatch(units, priceFactor = 1, amountFactor = 1):
             newAmount = int(decimalAmount + (1-decimalAmount%1)) if decimalAmount%1>=0.5 else int(decimalAmount)
             if newAmount < 0:
                 raise ValueError("Amount cannot be negative.")
-            amounts += DictChange(prop = "MaxDeployableAmount", 
+            amounts += GeneralChangeDict(prop = "MaxDeployableAmount", 
                                   key = i, 
                                   typeValuePair = ["Int32", newAmount])
             
@@ -339,7 +339,7 @@ def pricePatch(units, priceFactor = 1, amountFactor = 1):
         GeneralPatch(table = "TUniteAuSolDescriptor",
                      patchName = " price of "+unit, 
                      conditions = GeneralConditions(NameInMenuToken = units[unit][0]),
-                     changes = DictChange(prop = "ProductionPrice", 
+                     changes = GeneralChangeDict(prop = "ProductionPrice", 
                                           key = 0, 
                                           typeValuePair = ["Int32",price])+amounts)
 
@@ -360,7 +360,7 @@ def pricePatchSingle(patchName, unitData, priceFactor = 1, amountFactor = 1):
         newAmount = int(decimalAmount + (1-decimalAmount%1)) if decimalAmount%1>=0.5 else int(decimalAmount)
         if newAmount < 0:
             raise ValueError("Amount cannot be negative.")
-        amounts += DictChange(prop = "MaxDeployableAmount", 
+        amounts += GeneralChangeDict(prop = "MaxDeployableAmount", 
                               key = i, 
                               typeValuePair = ["Int32", newAmount])
         
@@ -369,11 +369,11 @@ def pricePatchSingle(patchName, unitData, priceFactor = 1, amountFactor = 1):
     GeneralPatch(table = "TUniteAuSolDescriptor",
                  patchName = patchName, 
                  conditions = GeneralConditions(NameInMenuToken = unitHash),
-                 changes = DictChange(prop = "ProductionPrice", 
+                 changes = GeneralChangeDict(prop = "ProductionPrice", 
                                       key = 0, 
                                       typeValuePair = ["Int32",price])+amounts)
     
-def DictChange(prop, key, typeValuePair):
+def GeneralChangeDict(prop, key, typeValuePair):
     ret = ""
     ret += ("""<change operation="set" property=\""""
     +prop+"""\" key=\""""
@@ -382,6 +382,12 @@ def DictChange(prop, key, typeValuePair):
     +str(typeValuePair[1])+"""</change>\n	   	   	""")
     return ret
         
+def GeneralChangeDictInDict(prop, keyOut, keyIn, typeValuePair):
+   ret = ""
+   
+   ret += """<change operation="select" property="Values" key="3" />
+            <change operation="set" key="8" type="Float32">0.3</change>"""
+
 def tankAmount(price):
     priceLine = [5,25,40,   50,60,70,   90,110,125,     140,150,165,    180]
     amountCat = [[0,24,18,0,0],#5
@@ -485,9 +491,27 @@ def GeneralConditionReference(table, tableConditions):
 				<matchconditions>
                     """+addTabsBetweenLines(string = tableConditions, tabCount = 2)+"""
 				</matchconditions>
-			</matchcondition>
-    
-    """
+			</matchcondition>"""
+    return ret
+
+def GeneralConditionReferencedBy(table, tableConditions):
+    ret = ""
+    ret += """<matchcondition type="referencedBy" table=\""""+table+"""">
+				<matchconditions>
+                    """+addTabsBetweenLines(string = tableConditions, tabCount = 2)+"""
+				</matchconditions>
+			</matchcondition>"""
+    return ret
+
+def GeneralChangesObject(prop, table, tableConditions):
+    ret = ""
+    ret += """<change operation="set" property=\""""+prop+"""\" type="ObjectReference">
+				<reference table=\""""+table+"""\">
+					<matchconditions>
+                        """+addTabsBetweenLines(string = tableConditions, tabCount = 2)+"""
+					</matchconditions>
+				</reference>
+      		</change>"""
     return ret
 
 def accInputCheck(acc):
@@ -631,6 +655,51 @@ def TAmmuChangesRange(shipOnly = False,
         ret += TAmmuChanges(PorteeMinimaleProjectile = ["Float32",projec[0]])
     if projec[1]:
         ret += TAmmuChanges(PorteeMaximaleProjectile = ["Float32",projec[1]])  
+    return ret
+
+def TAmmuConditionsRange(shipOnly = False,
+                      ground = [None,None], 
+                      helo   = [None,None],                 
+                      air    = [None,None],
+                      projec = [None,None]):
+    ret = ""
+    if shipOnly:
+        if ground[0]:
+            intCheck(ground[0])
+            ret += TAmmuConditions(PorteeMinimaleBateaux    = ground[0])
+        if ground[1]:
+            intCheck(ground[1])
+            ret += TAmmuConditions(PorteeMaximaleBateaux    = ground[1])  
+    else:
+        if ground[0]:
+            intCheck(ground[0])
+            ret += TAmmuConditions(PorteeMinimale           = ground[0],
+                                   PorteeMinimaleBateaux    = ground[0])
+        if ground[1]:
+            intCheck(ground[1])
+            ret += TAmmuConditions(PorteeMaximale           = ground[1],
+                                   PorteeMaximaleBateaux    = ground[1])  
+        
+    if helo[0]:
+        intCheck(helo[0])
+        ret += TAmmuConditions(PorteeMinimaleTBA        = helo[0])
+    if helo[1]:
+        intCheck(helo[1])
+        ret += TAmmuConditions(PorteeMaximaleTBA        = helo[1])  
+        
+    if air[0]:
+        intCheck(air[0])
+        ret += TAmmuConditions(PorteeMinimaleHA         = air[0])
+    if air[1]:
+        intCheck(air[1])
+        ret += TAmmuConditions(PorteeMaximaleHA         = air[1])  
+        
+    if projec[0]:
+        intCheck(projec[0])
+        ret += TAmmuConditions(PorteeMinimaleProjectile = projec[0])
+    if projec[1]:
+        intCheck(projec[1])
+        ret += TAmmuConditions(PorteeMaximaleProjectile = projec[1])  
     return ret
 
 def TAmmuChangesDisp(disp = [None, None]):
@@ -793,5 +862,16 @@ def checkXmlOutputIsEmpty():
     if xmlOutput != "":
         raise ValueError("xmlOutput is not empty")
     
+def TMountedWeaponPatchReplace(patchName, unitHash, oldAmmuCondition, newAmmuCondition):
+    GeneralPatch("TMountedWeaponDescriptor", patchName, 
+                 GeneralConditionReference("TAmmunition", oldAmmuCondition)+"\n\n			"+
+                 
+                 GeneralConditionReferencedBy("TTurretUnitDescriptor", 
+                     GeneralConditionReferencedBy("TWeaponManagerModuleDescriptor", 
+                         GeneralConditionReferencedBy("TModuleSelector", 
+                             GeneralConditionReferencedBy("TUniteAuSolDescriptor", 
+                                 GeneralConditions(NameInMenuToken = unitHash))))),
+                 
+                 GeneralChangesObject("Ammunition", "TAmmunition", addTabsBetweenLines(newAmmuCondition,1)))
 
 
