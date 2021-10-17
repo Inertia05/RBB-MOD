@@ -88,9 +88,11 @@ GatlingGunTypeArme = "ECECC6B919010000"
 CIWSTypeArme = "5D38350000000000"
 
 SSMTypeArme = "57D7010000000000"
-
 MainGunTypeArme = "B31E95B36B5E0000"
 
+TurretTypeUnit = "TTurretUnitDescriptor"
+TurretTypeAxis = "TTurretTwoAxisDescriptor"
+TurretTypeInf  = "TTurretInfanterieDescriptor"
 
 """
 			<matchcondition type="property" property="TypeArme">A74C330000000000</matchcondition>
@@ -496,7 +498,7 @@ def GeneralConditionReference(table, tableConditions):
 
 def GeneralConditionReferencedBy(table, tableConditions):
     ret = ""
-    ret += """<matchcondition type="referencedBy" table=\""""+table+"""">
+    ret += """<matchcondition type="referencedby" table=\""""+table+"""">
 				<matchconditions>
                     """+addTabsBetweenLines(string = tableConditions, tabCount = 2)+"""
 				</matchconditions>
@@ -727,8 +729,10 @@ def TAmmuChangesAOE(HE = [None, None], Sup = [None, None]):
     ret = ""
     if HE[0]:
         HEval = HE[0]
-        if HEval>=1:
+        if HEval>=1 and HEval <4:
             HEval = round(HEval/0.5)*0.5
+        elif HEval >= 4:
+            HEval = round(HEval)
         ret += TAmmuChanges(PhysicalDamages             = ["Float32", HEval])
     if HE[1]:
         ret += TAmmuChanges(RadiusSplashPhysicalDamages = ["Float32", HE[1]])
@@ -832,6 +836,38 @@ def TAmmuConditionsROF(shotReload = None, shotFxReload  = None, salvoReload = No
                                = convertNumberForCondition(shotSimutane))
     return ret
 
+def TAmmuChangesROF(shotReload = None, shotFxReload  = None, salvoReload = None, 
+                    salvoUILength = None, salvoLength = None, 
+                    shotSimutane = None):
+    ret = ""
+    if not pandas.isna(shotReload):
+        ret += TAmmuChanges(TempsEntreDeuxTirs
+                               = ["Float32", convertNumberForCondition(shotReload)])
+    if not pandas.isna(shotFxReload):
+        ret += TAmmuChanges(TempsEntreDeuxFx
+                               = ["Float32", convertNumberForCondition(shotFxReload)])
+    if not pandas.isna(salvoReload):
+        ret += TAmmuChanges(TempsEntreDeuxSalves
+                               = ["Float32", convertNumberForCondition(salvoReload)])
+
+    if not pandas.isna(salvoUILength):
+        if not salvoUILength%1 == 0:
+            raise TypeError("salvoUILength = "+str(salvoUILength)+" must be int")
+        ret += TAmmuChanges(AffichageMunitionParSalve
+                            = ["UInt32", convertNumberForCondition(salvoUILength)])
+    if not pandas.isna(salvoLength):
+        if not salvoLength%1 == 0:
+            raise TypeError("salvoLength = "+str(salvoLength)+" must be int")
+        ret += TAmmuChanges(NbTirParSalves
+                            = ["UInt32", convertNumberForCondition(salvoLength)])
+        
+    if not pandas.isna(shotSimutane):
+        if not shotSimutane%1 == 0:
+            raise TypeError("shotSimutane = "+str(shotSimutane)+" must be int")
+        ret += TAmmuChanges(NbrProjectilesSimultanes
+                            = ["UInt32", convertNumberForCondition(shotSimutane)])
+    return ret
+
         
 def intCheck(*args, **kwargs):
     for arg in args:
@@ -852,7 +888,7 @@ def floatCheck(*args, **kwargs):
             raise TypeError(kwarg+" must be float type")      
     
 def convertNumberForCondition(number):
-    if number.is_integer():
+    if number%1 == 0:
         return int(number)
     else:
         return number
@@ -862,11 +898,11 @@ def checkXmlOutputIsEmpty():
     if xmlOutput != "":
         raise ValueError("xmlOutput is not empty")
     
-def TMountedWeaponPatchReplace(patchName, unitHash, oldAmmuCondition, newAmmuCondition):
+def TMountedWeaponPatchReplace(patchName, unitHash, oldAmmuCondition, newAmmuCondition, turretType = TurretTypeUnit):
     GeneralPatch("TMountedWeaponDescriptor", patchName, 
                  GeneralConditionReference("TAmmunition", oldAmmuCondition)+"\n\n			"+
                  
-                 GeneralConditionReferencedBy("TTurretUnitDescriptor", 
+                 GeneralConditionReferencedBy(turretType, 
                      GeneralConditionReferencedBy("TWeaponManagerModuleDescriptor", 
                          GeneralConditionReferencedBy("TModuleSelector", 
                              GeneralConditionReferencedBy("TUniteAuSolDescriptor", 

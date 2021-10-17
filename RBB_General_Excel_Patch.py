@@ -14,7 +14,9 @@ import os
 def WriteTAmmuPatchFromTable(sheet, typeArme = None, xlsx = "RBB.xlsx"):
     df = pandas.read_excel(xlsx, sheet, header = 1)
     firstTime = []
-    #有武器Hash即默认改变武器性质，有单位Hash即默认基于单位Hash识别重名武器
+    #有武器Hash即默认改变武器性质
+
+        
     for i in range(df["武器名"].size):
         武器Hash值 = df["武器Hash值"][i]
         if not pandas.isna(武器Hash值):
@@ -23,16 +25,23 @@ def WriteTAmmuPatchFromTable(sheet, typeArme = None, xlsx = "RBB.xlsx"):
                 print("Warning: repeated Weapon Name/Weapon Hash combo at line "+str(i+3)+" in sheet = "+sheet)
             else:
                 firstTime.append(patchName)
-                tAmmuConditions = WriteTAmmuConditionsFromDF(df, i)+(RBB.TAmmuConditions(TypeArme = typeArme) if typeArme else "")
-                tAmmuChanges    = WriteTAmmuChangesFromDF(df, i)
-                RBB.TAmmuPatch(patchName,
-                               tAmmuConditions,
-                               tAmmuChanges)
+            
+            hashOnly = False            
+            if "武器Hash值即唯一条件" in df.keys():
+                if df["武器Hash值即唯一条件"][i] == "Y":
+                    hashOnly = True
+ 
+            
+            tAmmuConditions = WriteTAmmuConditionsFromDF(df, i, hashOnly)+(RBB.TAmmuConditions(TypeArme = typeArme) if typeArme else "")
+            tAmmuChanges    = WriteTAmmuChangesFromDF(df, i)
+            RBB.TAmmuPatch(patchName,
+                           tAmmuConditions,
+                           tAmmuChanges)
      
                 
                 
                 
-def WriteTAmmuConditionsFromDF(df, i):
+def WriteTAmmuConditionsFromDF(df, i, hashOnly = True):
     tAmmuConditions = ""
 
     directKeys = ["原版对地射程(m)", "最小原版对地射程(m)",  
@@ -40,6 +49,7 @@ def WriteTAmmuConditionsFromDF(df, i):
                   "最小原版对直升机射程(m)", "最小原版对空射程(m)",     "最小原版反舰射程(m)", "最小原版反导射程(m)",
                   "武器Hash值",  "原版静止精度(%)", "原版移动精度(%)", "原版连发数", "原版齐射数","原版HEAT", "原版KE"]
     directValues = {}
+    #默认或nan时， 值均为None 
     for key in directKeys:
         directValues[key] = None
         if key in df.keys():
@@ -53,6 +63,13 @@ def WriteTAmmuConditionsFromDF(df, i):
                     directValues[key] = int(RBB.Range(value))
                 else:
                     directValues[key] = value
+                    
+    if directValues["武器Hash值"]:
+        tAmmuConditions += RBB.TAmmuConditions(Name = directValues["武器Hash值"])
+    
+    if hashOnly:
+        return tAmmuConditions
+    
     shipOnly = False
     ground = [directValues["最小原版对地射程(m)"],     directValues["原版对地射程(m)"]]
     if (directValues["原版反舰射程(m)"] != None) or (directValues["最小原版反舰射程(m)"]!= None):       
@@ -77,8 +94,7 @@ def WriteTAmmuConditionsFromDF(df, i):
     elif directValues["原版KE"]:
         tAmmuConditions += RBB.TAmmuConditionsArme("KE", directValues["KE"])
         
-    if directValues["武器Hash值"]:
-        tAmmuConditions += RBB.TAmmuConditions(Name = directValues["武器Hash值"])
+
     
     if directValues["原版静止精度(%)"]:
         tAmmuConditions += RBB.TAmmuConditions(acc = [directValues["原版静止精度(%)"],directValues["原版移动精度(%)"]])
@@ -92,6 +108,7 @@ def WriteTAmmuChangesFromDF(df, i):
     tAmmuChanges = ""
 
     directKeys = ["新武器Hash值", "HE", "HE半径", "压制", "压制半径","HEAT", "KE", "静止精度(%)", "移动精度(%)", 
+                  "连发数", "面板连发数", "齐射数", "短装填", "短装填Fx", "长装填",
                   "对空射程(km)", "对直升机射程(km)", "对地射程(km)", "反舰射程(km)", "反导射程(km)", 
                   "最小对空射程(km)", "最小对直升机射程(km)",	"最小对地射程(km)", "最小反舰射程(km)", "最小反导射程(km)"]
     directValues = {}
@@ -101,7 +118,7 @@ def WriteTAmmuChangesFromDF(df, i):
             value = df[key][i]
             if not pandas.isna(value):
                 if (key == "HE半径") or (key == "压制半径"):
-                    directValues[key] = value*52
+                    directValues[key] = round(value)*52
                 elif ("(%)" in key):
                     directValues[key] = value/100
                 elif ("(km)" in key):
@@ -121,7 +138,10 @@ def WriteTAmmuChangesFromDF(df, i):
                                           helo   = [directValues["最小对直升机射程(km)"], directValues["对直升机射程(km)"]],
                                           air    = [directValues["最小对空射程(km)"],     directValues["对空射程(km)"]],
                                           projec = [directValues["最小反导射程(km)"],     directValues["反导射程(km)"]])
-
+    
+    tAmmuChanges += RBB.TAmmuChangesROF(directValues["短装填"], directValues["短装填Fx"], directValues["长装填"],
+                                        directValues["面板连发数"], directValues["连发数"],
+                                        directValues["齐射数"])
 
     if "类型" in df.keys():
        类型 = df["类型"][i]

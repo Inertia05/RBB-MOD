@@ -216,6 +216,42 @@
 		</changes>
 	</ndfpatch>
 
+	<!-- change HARRIER GR.3 Rocket Pod's salvo count -->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TWeaponManagerModuleDescriptor" name="Harrier_GR3 Weapon Manager">
+		<matchconditions>
+			<matchcondition type="property" property="_ShortDatabaseName">WeaponDescriptor_Unit_Harrier_GR3</matchcondition>
+		</matchconditions>
+		<changes>
+			<change operation="set" property="Salves" key="2" type="Int32">2</change>
+
+			<!--  change operation="set" property="ProductionPrice" key="0" type="Int32">5</change>     -->
+		</changes>
+	</ndfpatch>
+
+	<!-- change Su-25 Rocket Pod's salvo count -->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TWeaponManagerModuleDescriptor" name="Su-25 Weapon Manager">
+		<matchconditions>
+			<matchcondition type="property" property="_ShortDatabaseName">WeaponDescriptor_Unit_Su25_Frogfoot</matchcondition>
+		</matchconditions>
+		<changes>
+			<change operation="set" property="Salves" key="3" type="Int32">2</change>
+
+			<!--  change operation="set" property="ProductionPrice" key="0" type="Int32">5</change>     -->
+		</changes>
+	</ndfpatch>
+
+	<!-- change Su-25_CZ Rocket Pod's salvo count -->
+	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TWeaponManagerModuleDescriptor" name="Su-25_CZ Weapon Manager">
+		<matchconditions>
+			<matchcondition type="property" property="_ShortDatabaseName">WeaponDescriptor_Unit_Su25_CZ</matchcondition>
+		</matchconditions>
+		<changes>
+			<change operation="set" property="Salves" key="3" type="Int32">2</change>
+
+			<!--  change operation="set" property="ProductionPrice" key="0" type="Int32">5</change>     -->
+		</changes>
+	</ndfpatch>
+
 	<!-- change F117 LGB Turret's min pitch -->
 	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TTurretUnitDescriptor" name="F117 LGB Turret">
 		<matchconditions>

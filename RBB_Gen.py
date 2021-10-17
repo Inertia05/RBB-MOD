@@ -42,6 +42,13 @@ RP.RBB.XMLPatch("RBB-TAmmuSSM")
 RP.TAmmuPatchesUniqueNameForTankMainGunsKERounds()
 RP.RBB.XMLPatch("RBB-TAmmuUniqueTankKEName")#OneWay
 
+RP.TAmmuPatchesUniqueNameForRocketPod()
+RP.RBB.XMLPatch("RBB-TAmmuUniqueRocketPodName")#OneWay
+
+
+RP.TAmmuPatchesReplaceRocketPodMountedWeapon()
+RP.RBB.XMLPatch("RBB-TAmmuRocketPodReplace")#OneWay, start after rocketPod unique name patch
+
 RP.TAmmuPatchesTankGuns()
 RP.RBB.XMLPatch("RBB-TAmmuTankGuns")#OneWay
 
@@ -50,6 +57,10 @@ RP.RBB.XMLPatch("RBB-TAmmuAllHETankGuns")#OneWay
 
 RP.RBB.bombPatches(HESupplyFactor=3, HESupRadiFactor=2, CLUSSupplyFactor=100, CLUSSupRadiFactor=1)
 RP.RBB.XMLPatch("RBB-Bomb")#Cluster and HE Bomb supply and damage for <1000kg
+
+RP.TEST()
+RP.RBB.XMLPatch("RBB-TEST")
+
 
 initialNDFName = "NDF_Win"
 patched = "_patched"
@@ -86,7 +97,7 @@ renameCommand(initialNDFName.lower()+patched+patched+".dat", PreOneWayDeploy+".d
 +RC.createHitRollCommands(PreOneWayDeploy)
 #NOT Redeployable
 
-+applyCommand(CreateFinal+".dat", [" RBB-TAmmuUniqueTankKEName.xml"])
++applyCommand(CreateFinal+".dat", [" RBB-TAmmuUniqueTankKEName.xml", "RBB-TAmmuUniqueRocketPodName.xml"])
 +renameCommand(CreateFinal.lower()+patched+".dat", HashChangeFinal+".dat")
 #NOT Redeployable
 
@@ -98,7 +109,7 @@ renameCommand(initialNDFName.lower()+patched+patched+".dat", PreOneWayDeploy+".d
 +renameCommand(PreNoReturn.lower()+patched+".dat", NoReturn_1+".dat")  
 #NOT Redeployable
 
-+applyCommand(NoReturn_1+".dat",["RBB-TAmmu.xml"])
++applyCommand(NoReturn_1+".dat",["RBB-TAmmu.xml", "RBB-TAmmuRocketPodReplace.xml"])
 +renameCommand(NoReturn_1.lower()+patched+".dat", "RBB-V3.0.dat")  
 #NOT Redeployable
 
