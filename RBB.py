@@ -43,7 +43,7 @@ def WMIPatch():
     print(wmiFile+" patch file generated.")
     wmiOutput = ""
     
-def WMIAlterDictPatch(language, hashList, valueList):
+def WMIAlterDictPatch(language, hashList, valueList, hashRenameList, valueRenameList):
     global wmiOutput
     wmiOutput += """
     <AlterDictionary 
@@ -55,12 +55,40 @@ def WMIAlterDictPatch(language, hashList, valueList):
         if not pandas.isna(valueI):
             wmiOutput += """            <AddEntry hash=\""""+hashI+"""\" value=\""""+valueI+""""/>\n"""
     
+    for i in range(len(hashRenameList)):
+        hashI = hashRenameList[i]
+        valueI = valueRenameList[i]
+        if not pandas.isna(valueI):
+            wmiOutput += """            <RenameEntry hash=\""""+hashI+"""\" value=\""""+valueI+""""/>\n"""
     wmiOutput += """
 		</AlterDictionary>	
     """
     
-
-
+def HashListRenameWeaponFromTable(sheet, fName = "RBB"):
+    df = pandas.read_excel(fName+".xlsx", sheet, header = 1)
+    hashList = []
+    valueList = []
+    for i in range(df["武器Hash值"].size):
+        武器Hash值 = df["武器Hash值"][i]
+        新武器名 = df["新武器名"][i]
+        新武器Hash值 = df["新武器Hash值"][i]
+        if (not pandas.isna(武器Hash值) and (not pandas.isna(新武器名) and (pandas.isna(新武器Hash值)))):
+            hashList.append(武器Hash值)
+            valueList.append(新武器名)
+    return hashList,valueList        
+    
+def HashListAddWeaponFromTable(sheet, fName = "RBB"):
+    df = pandas.read_excel(fName+".xlsx", sheet, header = 1)
+    hashList = []
+    valueList = []
+    for i in range(df["新武器Hash值"].size):
+        武器Hash值 = df["武器Hash值"][i]
+        新武器名 = df["新武器名"][i]
+        新武器Hash值 = df["新武器Hash值"][i]
+        if ((not pandas.isna(新武器名) and (not pandas.isna(新武器Hash值)))):#include line with no 武器Hash值 
+            hashList.append(新武器Hash值)
+            valueList.append(新武器名)
+    return hashList,valueList        
 
 HEBombTypeArme = "A74C330000000000"
 RetardedHEBombTypeArme = "A74C33B9CA010000"
@@ -513,7 +541,8 @@ def GeneralChangesObject(prop, table, tableConditions):
                         """+addTabsBetweenLines(string = tableConditions, tabCount = 2)+"""
 					</matchconditions>
 				</reference>
-      		</change>"""
+      		</change>
+            """
     return ret
 
 def accInputCheck(acc):
@@ -737,7 +766,9 @@ def TAmmuChangesAOE(HE = [None, None], Sup = [None, None]):
     if HE[1]:
         ret += TAmmuChanges(RadiusSplashPhysicalDamages = ["Float32", HE[1]])
     if Sup[0]:
-        ret += TAmmuChanges(SuppressDamages             = ["Float32", Sup[0]])
+        SupVal = Sup[0]
+        SupVal = round(SupVal)
+        ret += TAmmuChanges(SuppressDamages             = ["Float32", SupVal])
     if Sup[1]:
         ret += TAmmuChanges(RadiusSplashSuppressDamages = ["Float32", Sup[1]])
     return ret
@@ -840,9 +871,16 @@ def TAmmuChangesROF(shotReload = None, shotFxReload  = None, salvoReload = None,
                     salvoUILength = None, salvoLength = None, 
                     shotSimutane = None):
     ret = ""
+    if pandas.isna(shotFxReload):
+            shotFxReload = shotReload
+            
+    if pandas.isna(salvoUILength):
+            salvoUILength = salvoLength
+    
     if not pandas.isna(shotReload):
         ret += TAmmuChanges(TempsEntreDeuxTirs
-                               = ["Float32", convertNumberForCondition(shotReload)])
+                               = ["Float32", convertNumberForCondition(shotReload)])    
+            
     if not pandas.isna(shotFxReload):
         ret += TAmmuChanges(TempsEntreDeuxFx
                                = ["Float32", convertNumberForCondition(shotFxReload)])
@@ -855,6 +893,7 @@ def TAmmuChangesROF(shotReload = None, shotFxReload  = None, salvoReload = None,
             raise TypeError("salvoUILength = "+str(salvoUILength)+" must be int")
         ret += TAmmuChanges(AffichageMunitionParSalve
                             = ["UInt32", convertNumberForCondition(salvoUILength)])
+        
     if not pandas.isna(salvoLength):
         if not salvoLength%1 == 0:
             raise TypeError("salvoLength = "+str(salvoLength)+" must be int")
@@ -910,4 +949,18 @@ def TMountedWeaponPatchReplace(patchName, unitHash, oldAmmuCondition, newAmmuCon
                  
                  GeneralChangesObject("Ammunition", "TAmmunition", addTabsBetweenLines(newAmmuCondition,1)))
 
+def TAmmuChangesFire(fireSize = None, fireChance = 1):
+    ret = ""
+    if fireSize:
+        fireNames = {"小"     :"Fire_NapalmLeger",    #NPLM squad
+                     "中"     :"Fire_NapalmBuratino", #NPLM MLRS
+                     "大"     :"Fire_Napalm",         #NPLM tank
+                     "特大"   :"Fire_NapalmLourd"     #NPLM air bomb
+                    }
 
+        tUniteDescriptorCondition = GeneralConditions(ClassNameForDebug = fireNames[fireSize])
+        ret += GeneralChanges(IgnoreInflammabilityConditions = ["Boolean", True],
+                              FireTriggeringProbability      = ["Float32", fireChance])
+        
+        ret += GeneralChangesObject("FireDescriptor", "TUniteDescriptor", addTabsBetweenLines(tUniteDescriptorCondition,1))
+    return ret

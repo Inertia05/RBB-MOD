@@ -64,7 +64,7 @@ RP.RBB.XMLPatch("RBB-TEST")
 
 initialNDFName = "NDF_Win"
 patched = "_patched"
-
+finalNDFName = "RBB-V3.0"
 def renameCommand(fromFileName, toFileName):
     return """rename """+fromFileName+" "+toFileName+"\n\n\n\n"
 
@@ -97,7 +97,7 @@ renameCommand(initialNDFName.lower()+patched+patched+".dat", PreOneWayDeploy+".d
 +RC.createHitRollCommands(PreOneWayDeploy)
 #NOT Redeployable
 
-+applyCommand(CreateFinal+".dat", [" RBB-TAmmuUniqueTankKEName.xml", "RBB-TAmmuUniqueRocketPodName.xml"])
++applyCommand(CreateFinal+".dat", ["RBB-TAmmuUniqueTankKEName.xml", "RBB-TAmmuUniqueRocketPodName.xml"])
 +renameCommand(CreateFinal.lower()+patched+".dat", HashChangeFinal+".dat")
 #NOT Redeployable
 
@@ -117,6 +117,60 @@ renameCommand(initialNDFName.lower()+patched+patched+".dat", PreOneWayDeploy+".d
 +
 """\n\n\n\nEND
 """)
-
-
 print(cmd)
+def generateCmd(initialNDFName, dire, finalNDFName):
+    orderedFileList = [[initialNDFName, 
+                            ["RBB-Pre.xml" ,"RBB-Recon.xml", "RBB-Price.xml", "RBB-Unit.xml"]],
+                       [PreOneWayDeploy+"-0", 
+                            ["RBB-ReferencedBy.xml", "RBB-TAmmuSSM.xml", "RBB-TAmmuSAM.xml", "RBB-Bomb.xml"]],
+                       [PreOneWayDeploy+"-1", 
+                            "createHitRollCommands"],
+                       [CreateFinal, 
+                            ["RBB-TAmmuUniqueTankKEName.xml", "RBB-TAmmuUniqueRocketPodName.xml"]],
+                       [HashChangeFinal,
+                            ["RBB-TAmmuTankGuns.xml","RBB-TAmmuRedeployable.xml"]],
+                       [PreNoReturn, 
+                            ["RBB-TAmmuAllHETankGuns.xml","RBB-Air-HandWritten.xml"]],
+                       [NoReturn_1, 
+                            ["RBB-TAmmu.xml", "RBB-TAmmuRocketPodReplace.xml"]],
+                       ]
+    cmd = "\n\n\n"
+    cmd += dire
+    for i, j in enumerate(orderedFileList):
+        fileName = j[0]
+        patches = j[1]
+        if i != len(orderedFileList)-1:
+            nextFileName = orderedFileList[i+1][0]
+        else:
+            nextFileName = finalNDFName
+        if patches == "createHitRollCommands":
+            cmd += RC.createHitRollCommands(fileName)
+        else:
+            cmd += applyCommand(fileName+".dat", patches)
+            cmd += renameCommand(fileName.lower()+patched+".dat", nextFileName+".dat")
+    cmd += """\n\n\n\nEND"""
+    return cmd
+        
+
+#print(generateCmd(initialNDFName, dire, finalNDFName))
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+

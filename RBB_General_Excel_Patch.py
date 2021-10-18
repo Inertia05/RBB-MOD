@@ -109,6 +109,7 @@ def WriteTAmmuChangesFromDF(df, i):
 
     directKeys = ["新武器Hash值", "HE", "HE半径", "压制", "压制半径","HEAT", "KE", "静止精度(%)", "移动精度(%)", 
                   "连发数", "面板连发数", "齐射数", "短装填", "短装填Fx", "长装填",
+                  "最小散布", "最大散布", "火",
                   "对空射程(km)", "对直升机射程(km)", "对地射程(km)", "反舰射程(km)", "反导射程(km)", 
                   "最小对空射程(km)", "最小对直升机射程(km)",	"最小对地射程(km)", "最小反舰射程(km)", "最小反导射程(km)"]
     directValues = {}
@@ -123,6 +124,8 @@ def WriteTAmmuChangesFromDF(df, i):
                     directValues[key] = value/100
                 elif ("(km)" in key):
                     directValues[key] = RBB.Range(RBB.GameDistanceFor(value))
+                elif key in ["最小散布", "最大散布"]:
+                    directValues[key] = value/18.2*52#game ui dispersion is auto rounded to int
                 else:
                     directValues[key] = value
     
@@ -142,12 +145,17 @@ def WriteTAmmuChangesFromDF(df, i):
     tAmmuChanges += RBB.TAmmuChangesROF(directValues["短装填"], directValues["短装填Fx"], directValues["长装填"],
                                         directValues["面板连发数"], directValues["连发数"],
                                         directValues["齐射数"])
+    
+    tAmmuChanges += RBB.TAmmuChangesDisp(disp = [directValues["最小散布"], directValues["最大散布"]])
+    
+    tAmmuChanges += RBB.TAmmuChangesFire(fireSize = directValues["火"], fireChance = 1)
 
     if "类型" in df.keys():
        类型 = df["类型"][i]
        if not pandas.isna(类型):   
-           if 类型 == "SEAD":
+           if 类型 in ["SEAD", "AGM"]:
                tAmmuChanges += RBB.TAmmuChangesArme("HE")+RBB.TAmmuChanges(TirIndirect = ["Boolean", True])
+            
                
     if directValues["HEAT"]:
         tAmmuChanges += RBB.TAmmuChangesArme("HEAT", directValues["HEAT"])
