@@ -109,7 +109,7 @@ def WriteTAmmuChangesFromDF(df, i):
 
     directKeys = ["新武器Hash值", "HE", "HE半径", "压制", "压制半径","HEAT", "KE", "静止精度(%)", "移动精度(%)", 
                   "连发数", "面板连发数", "齐射数", "短装填", "短装填Fx", "长装填",
-                  "最小散布", "最大散布", "火",
+                  "最小散布", "最大散布", "火", "类型", "口径",
                   "对空射程(km)", "对直升机射程(km)", "对地射程(km)", "反舰射程(km)", "反导射程(km)", 
                   "最小对空射程(km)", "最小对直升机射程(km)",	"最小对地射程(km)", "最小反舰射程(km)", "最小反导射程(km)"]
     directValues = {}
@@ -155,7 +155,11 @@ def WriteTAmmuChangesFromDF(df, i):
        if not pandas.isna(类型):   
            if 类型 in ["SEAD", "AGM"]:
                tAmmuChanges += RBB.TAmmuChangesArme("HE")+RBB.TAmmuChanges(TirIndirect = ["Boolean", True])
-            
+           elif "射后不理" in 类型:
+               tAmmuChanges += RBB.TAmmuChanges(IsFireAndForget = ["Boolean", True])
+               
+    if directValues["口径"]:
+        tAmmuChanges += RBB.TAmmuChanges(Caliber = [RBB.VariableTypeHash, RBB.TAmmuCaliber[directValues["口径"]]])
                
     if directValues["HEAT"]:
         tAmmuChanges += RBB.TAmmuChangesArme("HEAT", directValues["HEAT"])
@@ -170,3 +174,172 @@ def WriteTAmmuChangesFromDF(df, i):
            
     tAmmuChanges += RBB.TAmmuChangesAOE(HE = [directValues["HE"], directValues["HE半径"]], Sup = [directValues["压制"], directValues["压制半径"]])
     return tAmmuChanges
+
+
+#######################################################################################
+#######################################################################################
+
+def WriteUnitConditionsFromDF(df, i, hashOnly):
+    unitConditions = ""
+    directKeys = ["单位Hash值"]
+    directValues = {}
+    for key in directKeys:
+        directValues[key] = None
+        if key in df.keys():
+            value = df[key][i]
+            if not pandas.isna(value):
+                directValues[key] = value
+                
+    if directValues["单位Hash值"]:
+        unitConditions += RBB.GeneralConditions(NameInMenuToken = directValues["单位Hash值"])
+    return unitConditions
+
+def WriteTTypeUnitConditionsFromDF(df, i, hashOnly):
+    unitConditions = ""
+    directKeys = ["单位Hash值"]
+    directValues = {}
+    for key in directKeys:
+        directValues[key] = None
+        if key in df.keys():
+            value = df[key][i]
+            if not pandas.isna(value):
+                directValues[key] = value
+            
+    if directValues["单位Hash值"]:
+        unitConditions += RBB.GeneralConditions(NameInMenuToken = directValues["单位Hash值"],
+                                                GenerateName = True)
+    return unitConditions
+    
+    
+def WriteUnitChangesFromDF(df, i):
+    unitChanges = ""
+    directKeys = ["价格", "年代", "基础数量(菜鸟)", "基础数量(受训)", "基础数量(硬汉)", "基础数量(老兵)", "基础数量(精英)"]
+    directValues = {}
+    for key in directKeys:
+        directValues[key] = None
+        if key in df.keys():
+            value = df[key][i]
+            if not pandas.isna(value):   
+                directValues[key] = value
+                
+    if directValues["价格"]:   
+        price = int(directValues["价格"])
+        unitChanges += RBB.GeneralChangeDict(prop = "ProductionPrice", 
+                                              key = 0, 
+                                              typeValuePair = [RBB.VariableTypeUInt, price])
+        
+    for i, key in enumerate(["基础数量(菜鸟)", "基础数量(受训)", "基础数量(硬汉)", "基础数量(老兵)", "基础数量(精英)"]):
+        if (directValues[key] != None):
+            amount = int(directValues[key])
+            unitChanges += RBB.GeneralChangeDict(prop = "MaxDeployableAmount", 
+                                                 key = i, 
+                                                 typeValuePair = [RBB.VariableTypeUInt, amount])
+            
+    if directValues["年代"]:
+        年代 = directValues["年代"]
+        RBB.intCheck(年代 = 年代)
+        年代 = int(年代)
+        unitChanges += RBB.GeneralChanges(ProductionYear = [RBB.VariableTypeUInt, 年代])
+        if 年代<=1980:
+            RBB.GeneralChangeDictInDict(prop = "Filters", keyOut = 2, keyIn = 0, 
+                                        typeValuePair= [RBB.VariableTypeHash, RBB.CatPre1980])
+        elif 年代<=1985:
+            RBB.GeneralChangeDictInDict(prop = "Filters", keyOut = 2, keyIn = 0, 
+                                        typeValuePair= [RBB.VariableTypeHash, RBB.Cat1981to1985])
+        else:
+            RBB.GeneralChangeDictInDict(prop = "Filters", keyOut = 2, keyIn = 0, 
+                                        typeValuePair= [RBB.VariableTypeHash, RBB.CatPost1986])            
+    return unitChanges
+
+def WriteTTypeUnitChangesFromDF(df, i):
+    unitChanges = ""
+    directKeys = ["年代"]
+    directValues = {}
+    for key in directKeys:
+        directValues[key] = None
+        if key in df.keys():
+            value = df[key][i]
+            if not pandas.isna(value):   
+                directValues[key] = value
+            
+    if directValues["年代"]:
+        年代 = directValues["年代"]
+        RBB.intCheck(年代 = 年代)
+        if 年代<=1980:
+            unitChanges += RBB.GeneralChangeDictInDict(prop = "Filters", keyOut = 2, keyIn = 0, 
+                                        typeValuePair= [RBB.VariableTypeHash, RBB.CatPre1980])
+        elif 年代<=1985:
+            unitChanges += RBB.GeneralChangeDictInDict(prop = "Filters", keyOut = 2, keyIn = 0, 
+                                        typeValuePair= [RBB.VariableTypeHash, RBB.Cat1981to1985])
+        else:
+            unitChanges += RBB.GeneralChangeDictInDict(prop = "Filters", keyOut = 2, keyIn = 0, 
+                                        typeValuePair= [RBB.VariableTypeHash, RBB.CatPost1986])            
+    return unitChanges
+
+
+
+
+def WriteGeneralPatchFromTable(sheet, dataClass = "TUniteAuSolDescriptor", keyProperty = "单位Hash值", keyPropertyName = "单位名", xlsx = "RBB.xlsx",
+                               WriteConditionsFromDF    = WriteUnitConditionsFromDF,
+                               WriteChangesFromDF       = WriteUnitChangesFromDF):
+    df = pandas.read_excel(xlsx, sheet, header = 1)
+    firstTime = []
+    #检查keyProperty 不为 nan的每一行 
+    
+    connec = "(关键名称), 关键过滤值 = "
+    if keyProperty == "单位Hash值":
+        connec = "(单位), 单位Hash值 = "
+    
+    for i in range(df[keyProperty].size):
+        关键过滤值 = df[keyProperty][i]
+        if not pandas.isna(关键过滤值):
+            patchName = df[keyPropertyName][i] + connec +str(keyProperty)
+            if patchName in firstTime:
+                print("Warning: repeated 关键名称/关键过滤值 combo at line "+str(i+3)+" in sheet = "+sheet)
+            else:
+                firstTime.append(patchName)
+            
+            hashOnly = False     
+            keyPropertyOnly = keyProperty+"即唯一条件"
+            if keyPropertyOnly in df.keys():
+                if df[keyPropertyOnly][i] == "Y":
+                    hashOnly = True
+ 
+            
+            conditions = WriteConditionsFromDF(df, i, hashOnly)
+            changes    = WriteChangesFromDF(df, i)
+            RBB.GeneralPatch(dataClass,
+                             patchName,
+                             conditions,
+                             changes)
+            
+
+"""
+template
+def WriteGeneralConditionsFromDF(df, i, hashOnly):
+    generalConditions = ""
+    directKeys = []
+    directValues = {}
+    for key in directKeys:
+        directValues[key] = None
+        if key in df.keys():
+            value = df[key][i]
+            if not pandas.isna(value):
+                directValues[key] = value
+    return generalConditions
+    
+    
+def WriteGeneralChangesFromDF(df, i):
+    generalChanges = ""
+    directKeys = []
+    directValues = {}
+    for key in directKeys:
+        directValues[key] = None
+        if key in df.keys():
+            value = df[key][i]
+            if not pandas.isna(value):   
+                directValues[key] = value
+    return generalChanges
+
+"""
+    

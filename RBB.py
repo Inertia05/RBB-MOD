@@ -71,7 +71,7 @@ def HashListRenameWeaponFromTable(sheet, fName = "RBB"):
     for i in range(df["武器Hash值"].size):
         武器Hash值 = df["武器Hash值"][i]
         新武器名 = df["新武器名"][i]
-        新武器Hash值 = df["新武器Hash值"][i]
+        新武器Hash值 = df["新武器Hash值"][i] if "新武器Hash值" in df.keys() else None
         if (not pandas.isna(武器Hash值) and (not pandas.isna(新武器名) and (pandas.isna(新武器Hash值)))):
             hashList.append(武器Hash值)
             valueList.append(新武器名)
@@ -82,13 +82,52 @@ def HashListAddWeaponFromTable(sheet, fName = "RBB"):
     hashList = []
     valueList = []
     for i in range(df["新武器Hash值"].size):
-        武器Hash值 = df["武器Hash值"][i]
         新武器名 = df["新武器名"][i]
         新武器Hash值 = df["新武器Hash值"][i]
         if ((not pandas.isna(新武器名) and (not pandas.isna(新武器Hash值)))):#include line with no 武器Hash值 
             hashList.append(新武器Hash值)
             valueList.append(新武器名)
     return hashList,valueList        
+
+def HashListRenameFromTable(sheet, kwdHash = "单位Hash值", newKwdHash = "新单位Hash值", newKwdName = "新单位名", fName = "RBB"):
+    df = pandas.read_excel(fName+".xlsx", sheet, header = 1)
+    hashList = []
+    valueList = []
+    for i in range(df[kwdHash].size):
+        kwdHashI = df[kwdHash][i]
+        newKwdNameI = df[newKwdName][i]
+
+        newKwdHashI = df[newKwdHash][i] if newKwdHash in df.keys() else None
+        if (not pandas.isna(kwdHashI) and (not pandas.isna(newKwdNameI) and (pandas.isna(newKwdHashI)))):
+            hashList.append(kwdHashI)
+            valueList.append(newKwdNameI)
+    return hashList,valueList        
+    
+def HashListAddNameFromTable(sheet, newKwdHash = "新单位Hash值", newKwdName = "新单位名", fName = "RBB"):
+    df = pandas.read_excel(fName+".xlsx", sheet, header = 1)
+    hashList = []
+    valueList = []
+    for i in range(df[newKwdHash].size):
+        newKwdNameI = df[newKwdName][i]
+        newKwdHashI = df[newKwdHash][i]
+        if ((not pandas.isna(newKwdNameI) and (not pandas.isna(newKwdHashI)))):#include line with no kwdHash 
+            hashList.append(newKwdHashI)
+            valueList.append(newKwdNameI)
+    return hashList,valueList        
+
+VariableTypeFloat = "Float32"
+VariableTypeHash  = "LocalisationHash"
+VariableTypeBool  = "Boolean"
+VariableTypeUInt  = "UInt32"
+VariableTypeInt   = "Int32"
+
+TurretTypeUnit = "TTurretUnitDescriptor"
+TurretTypeAxis = "TTurretTwoAxisDescriptor"
+TurretTypeInf  = "TTurretInfanterieDescriptor"
+
+CatPre1980      = "41E22D4DD9380000"
+Cat1981to1985   = "46E22D4DD9380000"
+CatPost1986     = "81E22D4DD9380000"
 
 HEBombTypeArme = "A74C330000000000"
 RetardedHEBombTypeArme = "A74C33B9CA010000"
@@ -118,9 +157,20 @@ CIWSTypeArme = "5D38350000000000"
 SSMTypeArme = "57D7010000000000"
 MainGunTypeArme = "B31E95B36B5E0000"
 
-TurretTypeUnit = "TTurretUnitDescriptor"
-TurretTypeAxis = "TTurretTwoAxisDescriptor"
-TurretTypeInf  = "TTurretInfanterieDescriptor"
+
+
+def generateKeyWordHashDictFromTable(keyword, keywordHash, sheet = "常用Hash表", fName = "RBB"):
+    df = pandas.read_excel(fName+".xlsx", sheet, header = 1)
+    ret = {}
+    for i in range(df[keyword].size):
+        kwd = df[keyword][i]
+        kwdHash = df[keywordHash][i]
+        if (not pandas.isna(kwd)) and (not pandas.isna(kwdHash)):
+           ret[kwd] = kwdHash
+    return ret
+
+TAmmuCaliber = generateKeyWordHashDictFromTable(keyword = "口径名", keywordHash = "口径Hash值")
+TAmmuTypeArme = generateKeyWordHashDictFromTable(keyword = "武器类型名", keywordHash = "武器类型Hash值")
 
 """
 			<matchcondition type="property" property="TypeArme">A74C330000000000</matchcondition>
@@ -136,10 +186,6 @@ def Name(Name):
 
 def SalvoLength(SalvoLength):
     out = """<matchcondition type="property" property="NbTirParSalves">"""+str(SalvoLength)+"""</matchcondition>"""
-    return out
-
-def Caliber(caliber):
-    out = """<matchcondition type="property" property="Caliber">"""+caliber+"""</matchcondition>"""
     return out
 
 def IsSubAmmu(isSubAmmu):
@@ -194,7 +240,7 @@ def bombPatch(patchName, bombTypeArme, caliber, HE, HERadi, SupRadi, salvoLength
 
     if bombTypeArme == HEBombTypeArme or RetardedHEBombTypeArme:     
         conditions += """			"""+TypeArme(bombTypeArme)+"""
-        		"""                    +Caliber(caliber)+"""
+        		"""                    +TAmmuConditions(Caliber = caliber)+"""
         		"""                    +SalvoLength(salvoLength)
                 
         changes += """			"""    +setDamages(HE, HERadi, SupRadi)+"""
@@ -202,7 +248,7 @@ def bombPatch(patchName, bombTypeArme, caliber, HE, HERadi, SupRadi, salvoLength
 
     elif bombTypeArme == ATClusterBombTypeArme:
         conditions += """			"""+TypeArme(bombTypeArme)+"""
-        		"""                    +Caliber(caliber)+"""
+        		"""                    +TAmmuConditions(Caliber = caliber)+"""
         		"""                    +SalvoLength(salvoLength)
                 
         changes += """			"""    +setDamages(HE, HERadi, SupRadi)+"""
@@ -405,18 +451,20 @@ def pricePatchSingle(patchName, unitData, priceFactor = 1, amountFactor = 1):
     
 def GeneralChangeDict(prop, key, typeValuePair):
     ret = ""
-    ret += ("""<change operation="set" property=\""""
-    +prop+"""\" key=\""""
-    +str(key)+"""\" type=\""""
-    +typeValuePair[0]+"""\">"""
-    +str(typeValuePair[1])+"""</change>\n	   	   	""")
+    ret += ("""<change operation="set" property=\""""+prop+"""\" key=\""""+str(key)+
+    """\" type=\""""+typeValuePair[0]+"""\">"""+str(typeValuePair[1])+
+    """</change>\n	   	   	""")
     return ret
         
 def GeneralChangeDictInDict(prop, keyOut, keyIn, typeValuePair):
    ret = ""
+   keyOut = str(keyOut)
+   keyIn = str(keyIn)
    
-   ret += """<change operation="select" property="Values" key="3" />
-            <change operation="set" key="8" type="Float32">0.3</change>"""
+   ret += ("""<change operation="select" property=\""""+prop+"""\" key=\""""+keyOut+"""\" />
+            <change operation="set" key=\""""+keyIn+"""\" type=\""""+
+            typeValuePair[0]+"""\">"""+typeValuePair[1]+"""</change>""")
+   return ret
 
 def tankAmount(price):
     priceLine = [5,25,40,   50,60,70,   90,110,125,     140,150,165,    180]
@@ -781,7 +829,8 @@ def TAmmuChangesArme(ammoType, AP = 0):
     if ammoType == "KE":
         if AP<1 or AP >30:
             raise ValueError("AP Value has to be in range [1,30]")
-        return TAmmuChanges(Arme = ["UInt32", 4+int(AP)])
+        return TAmmuChanges(Arme                    = ["UInt32",  4+int(AP)],
+                            EfficaciteSelonPortee   = ["Boolean", True])
     elif ammoType == "HEAT":
         if AP<1 or AP >30:
             raise ValueError("AP Value has to be in range [1,30]")
@@ -910,11 +959,11 @@ def TAmmuChangesROF(shotReload = None, shotFxReload  = None, salvoReload = None,
         
 def intCheck(*args, **kwargs):
     for arg in args:
-        if type(arg) != int:
+        if arg%1 != 0:
             raise TypeError(str(arg)+" must be int type")      
     
     for kwarg in kwargs.keys():
-        if type(kwargs[kwarg]) != int:
+        if kwargs[kwarg]%1 != 0:
             raise TypeError(kwarg+" must be int type")       
             
 def floatCheck(*args, **kwargs):
