@@ -18,8 +18,8 @@ RP.RBB.XMLPatch("RBB-Pre")
 RP.PricePatches()
 RP.RBB.XMLPatch("RBB-Price")
 
-RP.UnitPatches()
-RP.RBB.XMLPatch("RBB-Unit")
+RP.TUnitPatchesRedeployable()
+RP.RBB.XMLPatch("RBB-TUnitRedeployable")
 
 RP.ReconPatches()
 RP.RBB.XMLPatch("RBB-Recon")
@@ -28,7 +28,7 @@ RP.TAmmuPatches()
 RP.RBB.XMLPatch("RBB-TAmmu")#OneWay
 
 RP.TAmmuPatchesRedeployable()
-RP.RBB.XMLPatch("RBB-TAmmuRedeployable")#OneWay
+RP.RBB.XMLPatch("RBB-TAmmuRedeployable")
 
 #RBB-Air-HandWritten.xml #OneWay
 
@@ -42,8 +42,9 @@ RP.RBB.XMLPatch("RBB-TAmmuSSM")
 RP.TAmmuPatchesUniqueNameForTankMainGunsKERounds()
 RP.RBB.XMLPatch("RBB-TAmmuUniqueTankKEName")#OneWay
 
-RP.TAmmuPatchesUniqueNameForRocketPod()
-RP.RBB.XMLPatch("RBB-TAmmuUniqueRocketPodName")#OneWay
+
+RP.TAmmuPatchesUniqueName()
+RP.RBB.XMLPatch("RBB-TAmmuUniqueName")#OneWay
 
 
 RP.TAmmuPatchesReplaceRocketPodMountedWeapon()
@@ -85,7 +86,7 @@ cd D:\WRD MOD\WGPatcher 2.4"""
 
 cmd =  dire + ("""
 WGPatcher apply """+initialNDFName+".dat"+
-""" RBB-Pre.xml RBB-Recon.xml RBB-Price.xml RBB-Unit.xml\n\n"""+
+""" RBB-Pre.xml RBB-Recon.xml RBB-Price.xml\n\n"""+
 #Redeployable
 
 """WGPatcher apply """+initialNDFName.lower()+patched+".dat"+
@@ -97,11 +98,11 @@ renameCommand(initialNDFName.lower()+patched+patched+".dat", PreOneWayDeploy+".d
 +RC.createHitRollCommands(PreOneWayDeploy)
 #NOT Redeployable
 
-+applyCommand(CreateFinal+".dat", ["RBB-TAmmuUniqueTankKEName.xml", "RBB-TAmmuUniqueRocketPodName.xml"])
++applyCommand(CreateFinal+".dat", ["RBB-TAmmuUniqueName.xml","RBB-TAmmuUniqueTankKEName.xml"])
 +renameCommand(CreateFinal.lower()+patched+".dat", HashChangeFinal+".dat")
 #NOT Redeployable
 
-+applyCommand(HashChangeFinal+".dat",["RBB-TAmmuTankGuns.xml","RBB-TAmmuRedeployable.xml"])
++applyCommand(HashChangeFinal+".dat",["RBB-TAmmuTankGuns.xml","RBB-TAmmuRedeployable.xml", "RBB-TUnitRedeployable"])
 +renameCommand(HashChangeFinal.lower()+patched+".dat", PreNoReturn+".dat")  
 #NOT Redeployable
 
@@ -117,18 +118,18 @@ renameCommand(initialNDFName.lower()+patched+patched+".dat", PreOneWayDeploy+".d
 +
 """\n\n\n\nEND
 """)
-print(cmd)
+#print(cmd)
 def generateCmd(initialNDFName, dire, finalNDFName):
     orderedFileList = [[initialNDFName, 
-                            ["RBB-Pre.xml" ,"RBB-Recon.xml", "RBB-Price.xml", "RBB-Unit.xml"]],
+                            ["RBB-Pre.xml" ,"RBB-Recon.xml", "RBB-Price.xml"]],
                        [PreOneWayDeploy+"-0", 
                             ["RBB-ReferencedBy.xml", "RBB-TAmmuSSM.xml", "RBB-TAmmuSAM.xml", "RBB-Bomb.xml"]],
                        [PreOneWayDeploy+"-1", 
                             "createHitRollCommands"],
                        [CreateFinal, 
-                            ["RBB-TAmmuUniqueTankKEName.xml", "RBB-TAmmuUniqueRocketPodName.xml"]],
+                            ["RBB-TAmmuUniqueName.xml","RBB-TAmmuUniqueTankKEName.xml"]],
                        [HashChangeFinal,
-                            ["RBB-TAmmuTankGuns.xml","RBB-TAmmuRedeployable.xml"]],
+                            ["RBB-TAmmuTankGuns.xml","RBB-TAmmuRedeployable.xml","RBB-TUnitRedeployable.xml"]],
                        [PreNoReturn, 
                             ["RBB-TAmmuAllHETankGuns.xml","RBB-Air-HandWritten.xml"]],
                        [NoReturn_1, 
@@ -152,7 +153,7 @@ def generateCmd(initialNDFName, dire, finalNDFName):
     return cmd
         
 
-#print(generateCmd(initialNDFName, dire, finalNDFName))
+print(generateCmd(initialNDFName, dire, finalNDFName))
     
     
     

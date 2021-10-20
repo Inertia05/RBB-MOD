@@ -73,6 +73,7 @@ def HashListRenameWeaponFromTable(sheet, fName = "RBB"):
         新武器名 = df["新武器名"][i]
         新武器Hash值 = df["新武器Hash值"][i] if "新武器Hash值" in df.keys() else None
         if (not pandas.isna(武器Hash值) and (not pandas.isna(新武器名) and (pandas.isna(新武器Hash值)))):
+            checkHashLength(武器Hash值)
             hashList.append(武器Hash值)
             valueList.append(新武器名)
     return hashList,valueList        
@@ -85,6 +86,7 @@ def HashListAddWeaponFromTable(sheet, fName = "RBB"):
         新武器名 = df["新武器名"][i]
         新武器Hash值 = df["新武器Hash值"][i]
         if ((not pandas.isna(新武器名) and (not pandas.isna(新武器Hash值)))):#include line with no 武器Hash值 
+            checkHashLength(新武器Hash值)
             hashList.append(新武器Hash值)
             valueList.append(新武器名)
     return hashList,valueList        
@@ -99,6 +101,7 @@ def HashListRenameFromTable(sheet, kwdHash = "单位Hash值", newKwdHash = "新�
 
         newKwdHashI = df[newKwdHash][i] if newKwdHash in df.keys() else None
         if (not pandas.isna(kwdHashI) and (not pandas.isna(newKwdNameI) and (pandas.isna(newKwdHashI)))):
+            checkHashLength(kwdHashI)
             hashList.append(kwdHashI)
             valueList.append(newKwdNameI)
     return hashList,valueList        
@@ -111,6 +114,7 @@ def HashListAddNameFromTable(sheet, newKwdHash = "新单位Hash值", newKwdName 
         newKwdNameI = df[newKwdName][i]
         newKwdHashI = df[newKwdHash][i]
         if ((not pandas.isna(newKwdNameI) and (not pandas.isna(newKwdHashI)))):#include line with no kwdHash 
+            checkHashLength(newKwdHashI)
             hashList.append(newKwdHashI)
             valueList.append(newKwdNameI)
     return hashList,valueList        
@@ -463,7 +467,8 @@ def GeneralChangeDictInDict(prop, keyOut, keyIn, typeValuePair):
    
    ret += ("""<change operation="select" property=\""""+prop+"""\" key=\""""+keyOut+"""\" />
             <change operation="set" key=\""""+keyIn+"""\" type=\""""+
-            typeValuePair[0]+"""\">"""+typeValuePair[1]+"""</change>""")
+            typeValuePair[0]+"""\">"""+typeValuePair[1]+"""</change>
+            <change operation="unselect" />\n            """)
    return ret
 
 def tankAmount(price):
@@ -684,8 +689,11 @@ def Range(distance):
 shown = False
 def GameDistanceFor(real_distance_km):
     global shown
-    xp = [0,  2.5,   12,   25,    60,   160]
-    fp = [0, 2500, 5000, 6000,  8400, 15000]
+    #xp = [0,  2.5,   12,   25,    60,   160]
+    #fp = [0, 2500, 5000, 6000,  8400, 15000]
+    
+    xp = [0,  2.5,   12,   30,    60,   160]
+    fp = [0, 2500, 5000, 7000,  9000, 15000]
     if not shown:
         distanceScale = ""
         for i in range(len(xp)):
@@ -886,7 +894,7 @@ def addTabsBetweenLines(string, tabCount):
 
 def TAmmuConditionsROF(shotReload = None, shotFxReload  = None, salvoReload = None, 
                        salvoUILength = None, salvoLength = None, 
-                       shotSimutane = None):
+                       shotSimutane = None, aim = None):
     ret = ""
     if not pandas.isna(shotReload):
         ret += TAmmuConditions(TempsEntreDeuxTirs
@@ -897,20 +905,23 @@ def TAmmuConditionsROF(shotReload = None, shotFxReload  = None, salvoReload = No
     if not pandas.isna(salvoReload):
         ret += TAmmuConditions(TempsEntreDeuxSalves
                                = convertNumberForCondition(salvoReload))
+    if not pandas.isna(aim):
+        ret += TAmmuConditions(TempsDeVisee
+                               = convertNumberForCondition(aim))
 
     if not pandas.isna(salvoUILength):
-        if not salvoUILength.is_integer():
+        if not salvoUILength%1 == 0:
             raise TypeError("salvoUILength = "+str(salvoUILength)+" must be int")
         ret += TAmmuConditions(AffichageMunitionParSalve
                                = convertNumberForCondition(salvoUILength))
     if not pandas.isna(salvoLength):
-        if not salvoLength.is_integer():
+        if not salvoLength%1 == 0:
             raise TypeError("salvoLength = "+str(salvoLength)+" must be int")
         ret += TAmmuConditions(NbTirParSalves
                                = convertNumberForCondition(salvoLength))
         
     if not pandas.isna(shotSimutane):
-        if not shotSimutane.is_integer():
+        if not shotSimutane%1 == 0:
             raise TypeError("shotSimutane = "+str(shotSimutane)+" must be int")
         ret += TAmmuConditions(NbrProjectilesSimultanes
                                = convertNumberForCondition(shotSimutane))
@@ -918,7 +929,7 @@ def TAmmuConditionsROF(shotReload = None, shotFxReload  = None, salvoReload = No
 
 def TAmmuChangesROF(shotReload = None, shotFxReload  = None, salvoReload = None, 
                     salvoUILength = None, salvoLength = None, 
-                    shotSimutane = None):
+                    shotSimutane = None, aim = None):
     ret = ""
     if pandas.isna(shotFxReload):
             shotFxReload = shotReload
@@ -936,6 +947,10 @@ def TAmmuChangesROF(shotReload = None, shotFxReload  = None, salvoReload = None,
     if not pandas.isna(salvoReload):
         ret += TAmmuChanges(TempsEntreDeuxSalves
                                = ["Float32", convertNumberForCondition(salvoReload)])
+        
+    if not pandas.isna(aim):
+        ret += TAmmuChanges(TempsDeVisee
+                               = ["Float32", convertNumberForCondition(aim)])
 
     if not pandas.isna(salvoUILength):
         if not salvoUILength%1 == 0:
@@ -954,6 +969,8 @@ def TAmmuChangesROF(shotReload = None, shotFxReload  = None, salvoReload = None,
             raise TypeError("shotSimutane = "+str(shotSimutane)+" must be int")
         ret += TAmmuChanges(NbrProjectilesSimultanes
                             = ["UInt32", convertNumberForCondition(shotSimutane)])
+      
+
     return ret
 
         
@@ -1013,3 +1030,7 @@ def TAmmuChangesFire(fireSize = None, fireChance = 1):
         
         ret += GeneralChangesObject("FireDescriptor", "TUniteDescriptor", addTabsBetweenLines(tUniteDescriptorCondition,1))
     return ret
+
+def checkHashLength(locHash):
+    if len(locHash) != 16:
+        raise ValueError("loc Hash must be in length 16")
