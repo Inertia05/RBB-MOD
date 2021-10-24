@@ -21,8 +21,9 @@ def WriteTAmmuPatchFromTable(sheet, typeArme = None, xlsx = "RBB.xlsx", newestWe
         武器Hash值 = df["武器Hash值"][i]
         if not pandas.isna(武器Hash值):
             patchName = df["武器名"][i] + "(weapon), weapon hash = " +str(武器Hash值)
+            repeatedCombo = False
             if patchName in firstTime:
-                print("Warning: repeated Weapon Name/Weapon Hash combo at line "+str(i+3)+" in sheet = "+sheet)
+                repeatedCombo = True
             else:
                 firstTime.append(patchName)
             
@@ -38,8 +39,19 @@ def WriteTAmmuPatchFromTable(sheet, typeArme = None, xlsx = "RBB.xlsx", newestWe
             RBB.TAmmuPatch(patchName,
                            tAmmuConditions,
                            tAmmuChanges)
-     
-                
+            if repeatedCombo:
+                if "武器Hash值即唯一条件" in df.keys():
+                    if df["武器Hash值即唯一条件"][i] == "Y":
+                        print("Warning: repeated Weapon Name/Weapon Hash combo at line "+str(i+3)+" in sheet = "+sheet)
+            
+            #if newestWeaponHashConditionOnly:
+            if "UI格子优先级" in df.keys():
+                UI格子优先级 = df["UI格子优先级"][i]
+                if not pandas.isna(UI格子优先级):
+                    RBB.intCheck(UI格子优先级 = UI格子优先级)
+                    RBB.TMountedWeaponPatchChangeUISlotIndex(patchName, 
+                                                             tableConditions = tAmmuConditions, 
+                                                             UIIndex = UI格子优先级)
                 
                 
 def WriteTAmmuConditionsFromDF(df, i, hashOnly = True, newestWeaponHashConditionOnly = False):
@@ -65,12 +77,23 @@ def WriteTAmmuConditionsFromDF(df, i, hashOnly = True, newestWeaponHashCondition
                         raise ValueError("vanilla range is not multiple of 175 at line "+str(i+3)+" in the sheet used")
                     directValues[key] = int(RBB.Range(value))
                 else:
+                    if ("Hash" in key):
+                        RBB.checkHashValue(value)
+                    elif key in ["原版武器类型", "原版武器子类型"]:
+                        pass
+                    else:
+                        RBB.checkNumber(value)
                     directValues[key] = value
                     
     if newestWeaponHashConditionOnly:
         if directValues["新武器Hash值"]:
             tAmmuConditions += RBB.TAmmuConditions(Name = directValues["新武器Hash值"]) 
             return tAmmuConditions
+        elif directValues["武器Hash值"]:
+            tAmmuConditions += RBB.TAmmuConditions(Name = directValues["武器Hash值"])
+            return tAmmuConditions
+        else:
+            raise ValueError("Line "+str(i)+" has no hash available for newest hash only condition")
             
     if directValues["武器Hash值"]:#always true because WriteTAmmuPatchFromTable has checked it before calling the function
         tAmmuConditions += RBB.TAmmuConditions(Name = directValues["武器Hash值"])
@@ -96,11 +119,11 @@ def WriteTAmmuConditionsFromDF(df, i, hashOnly = True, newestWeaponHashCondition
                        shotSimutane = directValues["原版齐射数"], aim = directValues["原版瞄准时间"])
     
     if directValues["原版HEAT"]:
-        tAmmuConditions += RBB.TAmmuConditionsArme("HEAT", directValues["HEAT"])
+        tAmmuConditions += RBB.TAmmuConditionsArme("HEAT", directValues["原版HEAT"])
         if directValues["原版KE"]:
             raise ValueError("原版KE和原版HEAT不能同时存在")
     elif directValues["原版KE"]:
-        tAmmuConditions += RBB.TAmmuConditionsArme("KE", directValues["KE"])
+        tAmmuConditions += RBB.TAmmuConditionsArme("KE", directValues["原版KE"])
         
     if directValues["原版武器类型"]:
         原版武器类型 = directValues["原版武器类型"]
@@ -108,6 +131,8 @@ def WriteTAmmuConditionsFromDF(df, i, hashOnly = True, newestWeaponHashCondition
             tAmmuConditions += RBB.TAmmuConditions(IgnoreInflammabilityConditions = True)
         elif "子母弹" in 原版武器类型:
             tAmmuConditions += RBB.TAmmuConditions(IsSubAmmunition = True)
+        elif "SAM" in 原版武器类型:
+            tAmmuConditions += RBB.TAmmuConditions(TypeArme = RBB.SAMTypeArme)
             
     if directValues["原版武器子类型"]:
         原版武器子类型 = directValues["原版武器子类型"]
@@ -121,7 +146,10 @@ def WriteTAmmuConditionsFromDF(df, i, hashOnly = True, newestWeaponHashCondition
                                                    SmokeDescriptor = "null",
                                                    IsSubAmmunition = "null",
                                                    IgnoreInflammabilityConditions = "null")
-        
+        elif "雷达" in 原版武器子类型:
+            tAmmuConditions += RBB.TAmmuConditions(Guidance = 1)
+        elif "光电" in 原版武器子类型:
+            tAmmuConditions += RBB.TAmmuConditions(Guidance = "null")
 
     
     if directValues["原版静止精度(%)"]:
@@ -137,10 +165,10 @@ def WriteTAmmuChangesFromDF(df, i):
 
     directKeys = ["新武器Hash值", "HE", "HE半径", "压制", "压制半径","HEAT", "KE", "静止精度(%)", "移动精度(%)", 
                   "连发数", "面板连发数", "齐射数", "短装填", "短装填Fx", "长装填", "瞄准时间",
-                  "最小散布", "最大散布", "火", "口径", 
+                  "最小散布", "最大散布", "修正系数",
                   "对空射程(km)", "对直升机射程(km)", "对地射程(km)", "反舰射程(km)", "反导射程(km)", 
                   "最小对空射程(km)", "最小对直升机射程(km)",	"最小对地射程(km)", "最小反舰射程(km)", "最小反导射程(km)",
-                  "武器类型"
+                  "火", "口径", "武器类型","弹链补给量"
                   #武器类型可选关键词： 
                   #     射后不理， 手动曲射， 自动曲射， 手动直射，自动直射， 步兵， 飞机， 
                   #     高爆，重机枪，枪
@@ -152,6 +180,7 @@ def WriteTAmmuChangesFromDF(df, i):
         if key in df.keys():
             value = df[key][i]
             if not pandas.isna(value):
+
                 if (key == "HE半径") or (key == "压制半径"):
                     directValues[key] = round(value)*52
                 elif ("(%)" in key):
@@ -161,6 +190,12 @@ def WriteTAmmuChangesFromDF(df, i):
                 elif key in ["最小散布", "最大散布"]:
                     directValues[key] = value/18.2*52#game ui dispersion is auto rounded to int
                 else:
+                    if ("Hash" in key):
+                        RBB.checkHashValue(value)
+                    elif key in ["火", "口径", "武器类型"]:
+                        pass
+                    else:
+                        RBB.checkNumber(value)
                     directValues[key] = value
     
     shipOnly = False
@@ -180,7 +215,8 @@ def WriteTAmmuChangesFromDF(df, i):
                                         directValues["面板连发数"], directValues["连发数"],
                                         directValues["齐射数"], directValues["瞄准时间"])
     
-    tAmmuChanges += RBB.TAmmuChangesDisp(disp = [directValues["最小散布"], directValues["最大散布"]])
+    tAmmuChanges += RBB.TAmmuChangesDisp(disp = [directValues["最小散布"], directValues["最大散布"]], 
+                                         corr = directValues["修正系数"])
     
     tAmmuChanges += RBB.TAmmuChangesFire(fireSize = directValues["火"], fireChance = 1)
     
@@ -237,6 +273,9 @@ def WriteTAmmuChangesFromDF(df, i):
         
     if directValues["新武器Hash值"]:
         tAmmuChanges += RBB.TAmmuChanges(Name = ["LocalisationHash", directValues["新武器Hash值"]])
+    
+    if directValues["弹链补给量"]:
+        tAmmuChanges += RBB.TAmmuChanges(SupplyCost = [RBB.VariableTypeUInt, int(directValues["弹链补给量"])])
            
     tAmmuChanges += RBB.TAmmuChangesAOE(HE = [directValues["HE"], directValues["HE半径"]], Sup = [directValues["压制"], directValues["压制半径"]])
     return tAmmuChanges
@@ -254,6 +293,8 @@ def WriteUnitConditionsFromDF(df, i, hashOnly):
         if key in df.keys():
             value = df[key][i]
             if not pandas.isna(value):
+                if ("Hash" in key):
+                    RBB.checkHashValue(value)
                 directValues[key] = value
                 
     if directValues["单位Hash值"]:
@@ -269,6 +310,8 @@ def WriteTTypeUnitConditionsFromDF(df, i, hashOnly):
         if key in df.keys():
             value = df[key][i]
             if not pandas.isna(value):
+                if ("Hash" in key):
+                    RBB.checkHashValue(value)
                 directValues[key] = value
             
     if directValues["单位Hash值"]:
@@ -304,6 +347,11 @@ def WriteUnitChangesFromDF(df, i):
                                                          key = i, 
                                                          typeValuePair = [RBB.VariableTypeUInt, amount])
                 amountChangesSet = True
+            elif 单位类型 == "侦察车辆":
+                pass #>=80=4, >=40=6, >=10=12
+            elif 单位类型 == "坦克歼击车":
+                pass
+            
             
     if not amountChangesSet:    
         for i, key in enumerate(amountKeys):
@@ -412,7 +460,7 @@ def WriteGeneralPatchFromTable(sheet, dataClass = "TUniteAuSolDescriptor", keyPr
                              conditions,
                              changes)
             
-def WriteUnitPatchFromTable(sheet, changeTTypeUnit = True):
+def WriteUnitPatchFromTable(sheet, changeTTypeUnit = False):
     WriteGeneralPatchFromTable(sheet)
     if changeTTypeUnit:
         WriteGeneralPatchFromTable(sheet, dataClass = "TTypeUnitModuleDescriptor",

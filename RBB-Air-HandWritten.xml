@@ -293,17 +293,4 @@
 			<!--  change operation="set" property="ProductionPrice" key="0" type="Int32">5</change>     -->
 		</changes>
 	</ndfpatch>
-
-	<!-- change property of 1000kg bomb -->
-	<ndfpatch ndf="pc\ndf\patchable\gfx\everything.ndfbin" table="TAmmunition" name="1000kg bomb">
-		<matchconditions>
-			<matchcondition type="property" property="Caliber">2C1C048100000000</matchcondition>
-		</matchconditions>
-		<changes>
-			<change operation="set" property="RadiusSplashSuppressDamages" type="Float32">63024</change>
-			<change operation="set" property="RadiusSplashPhysicalDamages" type="Float32">31512</change>
-			<change operation="set" property="PhysicalDamages" type="Float32">38</change>
-			<!--  change operation="set" property="ProductionPrice" key="0" type="Int32">5</change>     -->
-		</changes>
-	</ndfpatch>
 </wargamepatch>

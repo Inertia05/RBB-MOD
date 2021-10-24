@@ -10,6 +10,7 @@ Created on Sat Jul 17 17:40:12 2021
 import os
 import numpy as np
 import pandas 
+import numbers
 
 xmlOutput = ""
 def XMLPatch(fName = "RBB"):
@@ -274,67 +275,18 @@ def bombPatch(patchName, bombTypeArme, caliber, HE, HERadi, SupRadi, salvoLength
 def bombPatches(HESupplyFactor, HESupRadiFactor, CLUSSupplyFactor, CLUSSupRadiFactor):
     global xmlOutput
     checkXmlOutputIsEmpty()
-    xmlOutput += """<wargamepatch>"""
-
-    HEBombWeights = [227,250,340,400,500]
-    HEBombDamages = {
-                    227:
-                        ["2C8C0C0300000000",16,370],
-                    250:
-                        ["2C1C180300000000",17,382],
-                    340:
-                        ["2C1C140400000000",19,423],
-                    400:
-                        ["2C1C040500000000",20,447],
-                    500:
-                        ["2C1C040600000000",21,481]}
-    HEsalvoLengths = [2,3,4,5,6,8,10,12,14,25,30]
-    
+    xmlOutput += """<wargamepatch>"""    
     CLUSBombWeights = [245,340,450,500]
     CLUSBombDamages = {
                     245:
-                        ["2C6C140300000000",8,379],
+                        ["2C6C140300000000",8,379],#only Mk 20, 5 ins
                     340:
-                        ["2C1C140400000000",9,423],
+                        ["2C1C140400000000",9,423],#only 1 ins exist
                     450:
-                        ["2C1C180500000000",10,465],
+                        ["2C1C180500000000",10,465],#various name and salvo length
                     500:
-                        ["2C1C040600000000",11,481]}
+                        ["2C1C040600000000",11,481]}#only RBK-500, 4 ins
     CLUSsalvoLengths = [2,4,5,6,8,12]
-    
-    for i in range(len(HEBombWeights)):
-        for j in range(len(HEsalvoLengths)):
-            bombData = HEBombDamages[HEBombWeights[i]]
-            supplyRef = HEBombWeights[i]
-
-            salvoLength = HEsalvoLengths[j]
-            supply = supplyRef * salvoLength * HESupplyFactor
-            bombPatch(patchName = str(HEBombWeights[i])+" kg HE bomb, salvo length "+str(HEsalvoLengths[j]), 
-                        bombTypeArme = HEBombTypeArme,
-                        caliber = bombData[0], 
-                        HE = bombData[1], 
-                        HERadi = bombData[2], 
-                        SupRadi = bombData[2]*HESupRadiFactor, 
-                        salvoLength = salvoLength,
-                        supply = supply)
-            
-    bombPatch("Retarded 227kg HE Bomb, salvo length 2", 
-              RetardedHEBombTypeArme,
-              HEBombDamages[227][0], 
-              HEBombDamages[227][1],
-              HEBombDamages[227][2],
-              HEBombDamages[227][2]*2,
-              2,
-              227*2*3)
-    
-    bombPatch("Retarded 227kg HE Bomb, salvo length 12", 
-              RetardedHEBombTypeArme,
-              HEBombDamages[227][0], 
-              HEBombDamages[227][1],
-              HEBombDamages[227][2],
-              HEBombDamages[227][2]*2,
-              12,
-              227*12*3)
     
     for i in range(len(CLUSBombWeights)):
         for j in range(len(CLUSsalvoLengths)):
@@ -655,14 +607,17 @@ def TAmmuConditions(acc = None, unitHash = [None,None], **kwargs):
 def GeneralChanges(**kwargs):
     ret = ""
     for kwarg in kwargs.keys():
-        prefix = """<change operation="set" property=\""""
-        variable = kwarg #auto convert to string
-        connec1 = """\" type=\""""
-        vType = kwargs[kwarg][0]
-        connec2 = """\">"""
-        value = kwargs[kwarg][1]
-        suffix = """</change>\n   	   	    """
-        ret += AddSpaceTo3Var(prefix, variable, connec1, vType, connec2, value, suffix)
+        if kwargs[kwarg] == None:
+            ret += """<change operation="null" property=\""""+kwarg+"""\"/>\n   	   	    """
+        else:
+            prefix = """<change operation="set" property=\""""
+            variable = kwarg #auto convert to string
+            connec1 = """\" type=\""""
+            vType = kwargs[kwarg][0]
+            connec2 = """\">"""
+            value = kwargs[kwarg][1]
+            suffix = """</change>\n   	   	    """
+            ret += AddSpaceTo3Var(prefix, variable, connec1, vType, connec2, value, suffix)
     return ret
 
 def TAmmuChanges(acc = None, **kwargs):
@@ -682,7 +637,8 @@ def TAmmuChanges(acc = None, **kwargs):
 		    </change>
             """
     return ret
-                        
+                    
+
 def Range(distance):
     return distance/35*2600      
 
@@ -789,12 +745,14 @@ def TAmmuConditionsRange(shipOnly = False,
         ret += TAmmuConditions(PorteeMaximaleProjectile = projec[1])  
     return ret
 
-def TAmmuChangesDisp(disp = [None, None]):
+def TAmmuChangesDisp(disp = [None, None], corr = None):
     ret = ""
     if disp[0]:
             ret += TAmmuChanges(DispersionAtMinRange = ["Float32", disp[0]])
     if disp[1]:
             ret += TAmmuChanges(DispersionAtMaxRange = ["Float32", disp[1]])  
+    if corr:
+            ret += TAmmuChanges(CorrectedShotDispersionMultiplier = ["Float32", corr])  
     return ret
 
 def TAmmuConditionsArme(ammoType, AP = 0):
@@ -842,7 +800,8 @@ def TAmmuChangesArme(ammoType, AP = 0):
     elif ammoType == "HEAT":
         if AP<1 or AP >30:
             raise ValueError("AP Value has to be in range [1,30]")
-        return TAmmuChanges(Arme = ["UInt32", 34+int(AP)])
+        return TAmmuChanges(Arme = ["UInt32", 34+int(AP)],
+                            EfficaciteSelonPortee = None)
     else:
         if ammoType:
             return  TAmmuChanges(Arme = ["UInt32", Arme[ammoType]])
@@ -991,6 +950,8 @@ def floatCheck(*args, **kwargs):
     for kwarg in kwargs.keys():
         if type(kwargs[kwarg]) != float:
             raise TypeError(kwarg+" must be float type")      
+            
+
     
 def convertNumberForCondition(number):
     if number%1 == 0:
@@ -1014,6 +975,14 @@ def TMountedWeaponPatchReplace(patchName, unitHash, oldAmmuCondition, newAmmuCon
                                  GeneralConditions(NameInMenuToken = unitHash))))),
                  
                  GeneralChangesObject("Ammunition", "TAmmunition", addTabsBetweenLines(newAmmuCondition,1)))
+    
+def TMountedWeaponPatchChangeUISlotIndex(patchName, tableConditions, UIIndex):
+    intCheck(UIIndex = UIIndex)
+    UIIndex = int(UIIndex)
+    GeneralPatch("TMountedWeaponDescriptor", "All "+patchName+" go to slot "+str(UIIndex), 
+                                         conditions = GeneralConditionReference("TAmmunition", 
+                                                                                tableConditions = tableConditions),
+                                         changes = GeneralChanges(SalvoStockIndex_ForInterface = ["Int32",UIIndex]))
 
 def TAmmuChangesFire(fireSize = None, fireChance = 1):
     ret = ""
@@ -1032,5 +1001,17 @@ def TAmmuChangesFire(fireSize = None, fireChance = 1):
     return ret
 
 def checkHashLength(locHash):
+    locHash = str(locHash)
     if len(locHash) != 16:
         raise ValueError("loc Hash must be in length 16")
+        
+def checkHashValue(locHash):
+    locHash = str(locHash)
+    if len(locHash) != 16:
+        raise ValueError("loc Hash must be in length 16")
+    if not set(locHash) <= set("0123456789ABCDEF"):
+        raise ValueError("loc Hash cannot contain characters other than 0-9, A-F")
+        
+def checkNumber(num):
+    if not isinstance(num, numbers.Number):
+        raise ValueError("value: "+str(num)+" has to be a number")

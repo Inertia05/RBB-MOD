@@ -30,14 +30,11 @@ RP.RBB.XMLPatch("RBB-TAmmu")#OneWay
 RP.TAmmuPatchesRedeployable()
 RP.RBB.XMLPatch("RBB-TAmmuRedeployable")
 
-#RBB-Air-HandWritten.xml #OneWay
+#RBB-Air-HandWritten.xml #OneWay, Handwritten
 
-#RBB-ReferencedBy.xml #Content: B-5, AVIA-28, F-117 Altitude, FOB Supply, Mi-35's Kokon, Musti-UI(commnented out)
-RP.TAmmuPatchesSAM()
-RP.RBB.XMLPatch("RBB-TAmmuSAM")
+#RBB-ReferencedBy.xml #Handwritten, Content: B-5, AVIA-28, F-117 Altitude, FOB Supply, Mi-35's Kokon, Musti-UI(commnented out)
 
-RP.TAmmuPatchesSSM()
-RP.RBB.XMLPatch("RBB-TAmmuSSM")
+#RBB-Bomb.xml #Handwritten, content: just cluster damage and supply
 
 RP.TAmmuPatchesUniqueNameForTankMainGunsKERounds()
 RP.RBB.XMLPatch("RBB-TAmmuUniqueTankKEName")#OneWay
@@ -59,8 +56,8 @@ RP.RBB.XMLPatch("RBB-TAmmuAllHETankGuns")#OneWay
 RP.RBB.bombPatches(HESupplyFactor=3, HESupRadiFactor=2, CLUSSupplyFactor=100, CLUSSupRadiFactor=1)
 RP.RBB.XMLPatch("RBB-Bomb")#Cluster and HE Bomb supply and damage for <1000kg
 
-RP.TEST()
-RP.RBB.XMLPatch("RBB-TEST")
+RP.TempPatch()
+RP.RBB.XMLPatch("RBB-TempPatch")
 
 
 initialNDFName = "NDF_Win"
@@ -82,51 +79,17 @@ PreNoReturn ="RBB-PreNoReturn"
 NoReturn_1 = "NoReturn-1"
 
 dire = """D:
-cd D:\WRD MOD\WGPatcher 2.4"""
-
-cmd =  dire + ("""
-WGPatcher apply """+initialNDFName+".dat"+
-""" RBB-Pre.xml RBB-Recon.xml RBB-Price.xml\n\n"""+
-#Redeployable
-
-"""WGPatcher apply """+initialNDFName.lower()+patched+".dat"+
-""" RBB-ReferencedBy.xml RBB-TAmmuSSM.xml RBB-TAmmuSAM.xml RBB-Bomb.xml\n\n"""+
-#Redeployable
-
-renameCommand(initialNDFName.lower()+patched+patched+".dat", PreOneWayDeploy+".dat")
-+"\n\n\n\n"
-+RC.createHitRollCommands(PreOneWayDeploy)
-#NOT Redeployable
-
-+applyCommand(CreateFinal+".dat", ["RBB-TAmmuUniqueName.xml","RBB-TAmmuUniqueTankKEName.xml"])
-+renameCommand(CreateFinal.lower()+patched+".dat", HashChangeFinal+".dat")
-#NOT Redeployable
-
-+applyCommand(HashChangeFinal+".dat",["RBB-TAmmuTankGuns.xml","RBB-TAmmuRedeployable.xml", "RBB-TUnitRedeployable"])
-+renameCommand(HashChangeFinal.lower()+patched+".dat", PreNoReturn+".dat")  
-#NOT Redeployable
-
-+applyCommand(PreNoReturn+".dat",["RBB-TAmmuAllHETankGuns.xml","RBB-Air-HandWritten.xml"])
-+renameCommand(PreNoReturn.lower()+patched+".dat", NoReturn_1+".dat")  
-#NOT Redeployable
-
-+applyCommand(NoReturn_1+".dat",["RBB-TAmmu.xml", "RBB-TAmmuRocketPodReplace.xml"])
-+renameCommand(NoReturn_1.lower()+patched+".dat", "RBB-V3.0.dat")  
-#NOT Redeployable
+cd D:\WRD MOD\WGPatcher 2.4\n"""
 
 
-+
-"""\n\n\n\nEND
-""")
-#print(cmd)
 def generateCmd(initialNDFName, dire, finalNDFName):
     orderedFileList = [[initialNDFName, 
-                            ["RBB-Pre.xml" ,"RBB-Recon.xml", "RBB-Price.xml"]],
-                       [PreOneWayDeploy+"-0", 
-                            ["RBB-ReferencedBy.xml", "RBB-TAmmuSSM.xml", "RBB-TAmmuSAM.xml", "RBB-Bomb.xml"]],
-                       [PreOneWayDeploy+"-1", 
                             "createHitRollCommands"],
                        [CreateFinal, 
+                            ["RBB-Pre.xml" ,"RBB-Recon.xml", "RBB-Price.xml"]],
+                       [PreOneWayDeploy+"-0", 
+                            ["RBB-ReferencedBy.xml", "RBB-Bomb.xml"]],
+                       [PreOneWayDeploy+"-1", 
                             ["RBB-TAmmuUniqueName.xml","RBB-TAmmuUniqueTankKEName.xml"]],
                        [HashChangeFinal,
                             ["RBB-TAmmuTankGuns.xml","RBB-TAmmuRedeployable.xml","RBB-TUnitRedeployable.xml"]],
