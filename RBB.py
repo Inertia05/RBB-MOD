@@ -177,6 +177,31 @@ def generateKeyWordHashDictFromTable(keyword, keywordHash, sheet = "常用Hash�
 TAmmuCaliber = generateKeyWordHashDictFromTable(keyword = "口径名", keywordHash = "口径Hash值")
 TAmmuTypeArme = generateKeyWordHashDictFromTable(keyword = "武器类型名", keywordHash = "武器类型Hash值")
 
+def generateAmountDictForPrice(unitTypeList, sheet = "价格数量临界线", fName = "RBB"):
+
+    df = pandas.read_excel(fName+".xlsx", sheet, header = 1)
+    ret = {}
+    amountKeys = ["基础数量(菜鸟)", "基础数量(受训)", "基础数量(硬汉)", "基础数量(老兵)", "基础数量(精英)"]
+    for unitType in unitTypeList:
+        
+        priceList = df[unitType+"价格"]
+        priceListRet = []
+        amountDict = {}
+        for i in range(len(priceList)):
+            if not pandas.isna(priceList[i]):
+                price = int(priceList[i])
+                priceListRet.append(price)
+                amounts = []
+                for amountKey in amountKeys:
+                    amounts.append(int(df[unitType+amountKey][i]))
+                amountDict[price] = amounts
+        ret[unitType] = [priceListRet, amountDict]
+    
+    return ret
+
+unitTypeList = ["迫击炮", "坦克", "侦察车辆","步战车", "导弹坦歼"]
+UnitAmountDict = generateAmountDictForPrice(unitTypeList)
+
 """
 			<matchcondition type="property" property="TypeArme">A74C330000000000</matchcondition>
 """
@@ -423,32 +448,7 @@ def GeneralChangeDictInDict(prop, keyOut, keyIn, typeValuePair):
             <change operation="unselect" />\n            """)
    return ret
 
-def tankAmount(price):
-    priceLine = [5,25,40,   50,60,70,   90,110,125,     140,150,165,    180]
-    amountCat = [[0,24,18,0,0],#5
-                 [0,20,16,0,0],#25
-                 [0,16,12,0,0],#40
-                 
-                 [0,14,10,0,0],#50
-                 [0,12,8,0,0],#60
-                 [0,10,7,0,0],#70
-                 
-                 [0,8,6,0,0],#90 
-                 [0,7,5,0,0],#110 #None in Vanilla
-                 [0,6,4,0,0],#125 #110 in Vanilla
-                 
-                 [0,5,4,0,0],#140 #125 in Vanilla
-                 [0,4,3,0,0],#150 #140 in Vanilla
-                 [0,3,2,0,0],#165 #150 in Vanilla
-                 
-                 [0,2,0,1,0]]#180 #165 in Vanilla
-    amount = None
-    for i, line in enumerate(priceLine):
-        if price>=line:
-            amount = amountCat[i]
-    if amount == None:
-        raise ValueError("price return no matched amount")
-    return amount
+
 
 def GeneralPatch(table, patchName, conditions, changes):
     global xmlOutput
@@ -486,7 +486,7 @@ def TAmmuPatch(patchName, conditions, changes):
     out = out.replace("PatchName", patchName)
     xmlOutput += out
 
-maxLength = 130
+maxLength = 140
 def AddSpaceTo2Var(prefix, variable, connec, value, suffix):
     totLength = (len(prefix) + len(variable) + len(connec) + len(str(value)) + len(suffix))
     if totLength <= maxLength:
@@ -517,6 +517,11 @@ def GeneralConditions(**kwargs):
         prefix = """<matchcondition type="property" property=\""""
         connec = """\">"""
         suffix = """</matchcondition>\n      	    """
+        
+        if isinstance(value, numbers.Number):
+            if value%1 == 0:
+                if not isinstance(value, int):
+                    raise ValueError("Int Condition value = "+str(value)+" cannot have decimal point")
         ret += AddSpaceTo2Var(prefix, variable, connec, value, suffix)
     return ret
 
@@ -617,6 +622,26 @@ def GeneralChanges(**kwargs):
             connec2 = """\">"""
             value = kwargs[kwarg][1]
             suffix = """</change>\n   	   	    """
+            
+            if vType == VariableTypeInt:
+                if not isinstance(value, int):
+                    raise ValueError("Value has to be a int")
+            elif vType == VariableTypeUInt:
+                if not isinstance(value, int):
+                    raise ValueError("Value has to be a int")
+                if value<0:
+                    raise ValueError("Value has to be a non-negative int")
+            elif vType == VariableTypeHash:
+                if not isinstance(value, str):
+                    raise ValueError("Value has to be a string")
+                checkHashValue(value)
+            elif vType == VariableTypeFloat:
+                checkNumber(value)
+            elif vType == VariableTypeBool:
+                if not isinstance(value, bool):
+                    raise ValueError("Value has to be a boolean")
+                
+            
             ret += AddSpaceTo3Var(prefix, variable, connec1, vType, connec2, value, suffix)
     return ret
 
@@ -660,7 +685,7 @@ def GameDistanceFor(real_distance_km):
     if real_distance_km < xp[0]:
         raise ValueError("Input distance out of interpolation boundary(" + str(xp[0])+" km)!")
     interp = np.interp(real_distance_km,xp,fp)
-    if real_distance_km <= 12:
+    if real_distance_km <= 13:
         return round(interp/175)*175
     else:
         return round(interp/350)*350
@@ -772,7 +797,7 @@ def TAmmuChangesAOE(HE = [None, None], Sup = [None, None]):
     ret = ""
     if HE[0]:
         HEval = HE[0]
-        if HEval>=1 and HEval <4:
+        if HEval>=0.95 and HEval <4:
             HEval = round(HEval/0.5)*0.5
         elif HEval >= 4:
             HEval = round(HEval)
@@ -791,7 +816,7 @@ def TAmmuChangesArme(ammoType, AP = 0):
     """ammoType = (one of the following) 
             Bullet, HMG, HE, KE, HEAT
        AP is used for KE/HEAT ammoType only"""
-    Arme = {"Bullet":"null", "HMG":"1", "HE":"3"}
+    Arme = {"HMG":1, "HE":3}
     if ammoType == "KE":
         if AP<1 or AP >30:
             raise ValueError("AP Value has to be in range [1,30]")
@@ -802,6 +827,10 @@ def TAmmuChangesArme(ammoType, AP = 0):
             raise ValueError("AP Value has to be in range [1,30]")
         return TAmmuChanges(Arme = ["UInt32", 34+int(AP)],
                             EfficaciteSelonPortee = None)
+    
+    elif ammoType == "Bullet":
+        return TAmmuChanges(Arme = None)
+    
     else:
         if ammoType:
             return  TAmmuChanges(Arme = ["UInt32", Arme[ammoType]])
@@ -895,6 +924,8 @@ def TAmmuChangesROF(shotReload = None, shotFxReload  = None, salvoReload = None,
             
     if pandas.isna(salvoUILength):
             salvoUILength = salvoLength
+           
+    ###########################################################################
     
     if not pandas.isna(shotReload):
         ret += TAmmuChanges(TempsEntreDeuxTirs
@@ -984,10 +1015,25 @@ def TMountedWeaponPatchChangeUISlotIndex(patchName, tableConditions, UIIndex):
                                                                                 tableConditions = tableConditions),
                                          changes = GeneralChanges(SalvoStockIndex_ForInterface = ["Int32",UIIndex]))
 
+def TMountedWeaponPatchChangeStablizer(patchName, tableConditions, stabChange):
+    patchName = "所有 " + patchName +" "+stabChange+"稳定器" 
+    if stabChange == "移除":
+        changes = GeneralChanges(TirEnMouvement = None)
+    elif stabChange == "新增":
+        changes = GeneralChanges(TirEnMouvement = [VariableTypeBool, True])
+    else:
+        raise ValueError("stabChange argument has to be 移除 or 新增")
+    GeneralPatch("TMountedWeaponDescriptor", patchName, 
+                 conditions = GeneralConditionReference("TAmmunition", 
+                                                        tableConditions = tableConditions),
+                 changes = changes) 
+
+
 def TAmmuChangesFire(fireSize = None, fireChance = 1):
     ret = ""
     if fireSize:
-        fireNames = {"小"     :"Fire_NapalmLeger",    #NPLM squad
+        fireNames = {"特小"   :"Fire_Incendie",       #Tiny fire
+                     "小"     :"Fire_NapalmLeger",    #NPLM squad
                      "中"     :"Fire_NapalmBuratino", #NPLM MLRS
                      "大"     :"Fire_Napalm",         #NPLM tank
                      "特大"   :"Fire_NapalmLourd"     #NPLM air bomb

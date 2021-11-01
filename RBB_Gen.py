@@ -119,7 +119,7 @@ def generateCmd(initialNDFName, dire, finalNDFName):
 print(generateCmd(initialNDFName, dire, finalNDFName))
     
     
-    
+print(dire+"WGPatcher apply "+finalNDFName+".dat RBB-TempPatch.xml")
     
     
     
