@@ -4,7 +4,7 @@ This Repo is for RBB MOD for Wargame Red Dragon
 content in each file:
 
   RBB.py
-    Contains core utility functions for Patach Generation.
+    Contains core utility functions for patch generation.
     
   RBB_Gen.py
     A wrapper script for generation of a series of XML patches.
