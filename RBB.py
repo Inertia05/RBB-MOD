@@ -120,11 +120,12 @@ def HashListAddNameFromTable(sheet, newKwdHash = "新单位Hash值", newKwdName 
             valueList.append(newKwdNameI)
     return hashList,valueList        
 
-VariableTypeFloat = "Float32"
-VariableTypeHash  = "LocalisationHash"
-VariableTypeBool  = "Boolean"
-VariableTypeUInt  = "UInt32"
-VariableTypeInt   = "Int32"
+VariableTypeFloat  = "Float32"
+VariableTypeHash   = "LocalisationHash"
+VariableTypeBool   = "Boolean"
+VariableTypeUInt   = "UInt32"
+VariableTypeInt    = "Int32"
+VariableTypeTableString = "TableString"
 
 TurretTypeUnit = "TTurretUnitDescriptor"
 TurretTypeAxis = "TTurretTwoAxisDescriptor"
@@ -436,6 +437,33 @@ def GeneralChangeDict(prop, key, typeValuePair):
     """\" type=\""""+typeValuePair[0]+"""\">"""+str(typeValuePair[1])+
     """</change>\n	   	   	""")
     return ret
+
+def GeneralChangeDictValueObject(prop, key, table, tableConditions):
+    ret = ""
+
+    ret += ("""<change operation=\"set\" property=\""""+prop+"""\" key=\""""+str(key)+
+    """\" type= \"ObjectReference\">"""+"""
+                <reference table=\""""+table+"""\">
+					<matchconditions>
+                        """+addTabsBetweenLines(string = tableConditions, tabCount = 3)+"""
+					</matchconditions>
+				</reference>
+            </change>\n	   	   	""")
+                
+
+    return ret
+
+def GeneralChangeDictValueObjectAppend(prop, table, tableConditions):
+    ret = ""
+    ret += ("""<change operation=\"append\" property=\""""+prop+
+    """\" type= \"ObjectReference\">"""+"""
+                <reference table=\""""+table+"""\">
+					<matchconditions>
+                        """+addTabsBetweenLines(string = tableConditions, tabCount = 3)+"""
+					</matchconditions>
+				</reference>
+            </change>\n	   	   	""")
+    return ret
         
 def GeneralChangeDictInDict(prop, keyOut, keyIn, typeValuePair):
    ret = ""
@@ -486,7 +514,7 @@ def TAmmuPatch(patchName, conditions, changes):
     out = out.replace("PatchName", patchName)
     xmlOutput += out
 
-maxLength = 140
+maxLength = 150#140 max except model file name condition
 def AddSpaceTo2Var(prefix, variable, connec, value, suffix):
     totLength = (len(prefix) + len(variable) + len(connec) + len(str(value)) + len(suffix))
     if totLength <= maxLength:
@@ -554,6 +582,10 @@ def GeneralChangesObject(prop, table, tableConditions):
       		</change>
             """
     return ret
+
+
+
+
 
 def accInputCheck(acc):
     if acc[0] <0.05 or acc[0]>1:
@@ -816,7 +848,7 @@ def TAmmuChangesArme(ammoType, AP = 0):
     """ammoType = (one of the following) 
             Bullet, HMG, HE, KE, HEAT
        AP is used for KE/HEAT ammoType only"""
-    Arme = {"HMG":1, "HE":3}
+    Arme = {"HMG":1, "Autocannon":2, "HE":3}
     if ammoType == "KE":
         if AP<1 or AP >30:
             raise ValueError("AP Value has to be in range [1,30]")

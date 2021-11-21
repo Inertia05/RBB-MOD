@@ -211,11 +211,15 @@ def WriteTAmmuConditionsFromDF(df, i, hashOnly = True, newestWeaponHashCondition
                                                    SmokeDescriptor = "null",
                                                    IsSubAmmunition = "null",
                                                    IgnoreInflammabilityConditions = "null")
-        elif "雷达" in 原版武器子类型:
+        if "雷达" in 原版武器子类型:
             tAmmuConditions += RBB.TAmmuConditions(Guidance = 1)
         elif "光电" in 原版武器子类型:
             tAmmuConditions += RBB.TAmmuConditions(Guidance = "null")
-
+        
+        if "曲射" in 原版武器子类型:
+            tAmmuConditions += RBB.TAmmuConditions(TirIndirect = True)
+        elif "直射" in 原版武器子类型:
+            tAmmuConditions += RBB.TAmmuConditions(TirIndirect = "null")
     
     if directValues["原版静止精度(%)"]:
         tAmmuConditions += RBB.TAmmuConditions(acc = [directValues["原版静止精度(%)"],directValues["原版移动精度(%)"]])
@@ -233,10 +237,10 @@ def WriteTAmmuChangesFromDF(df, i):
     directKeys = ["新武器Hash值", "HE", "HE半径", "压制", "压制半径","HEAT", "KE", "静止精度(%)", "移动精度(%)", 
                   "连发数", "面板连发数", "齐射数", "短装填", "短装填Fx", "长装填", "瞄准时间",
                   "最小散布", "最大散布", "修正系数",
-                  "弹链补给量", "初速度", "散布角",
+                  "弹链补给量", "初速度", "散布角","摩擦力","噪音",
                   "对空射程(km)", "对直升机射程(km)", "对地射程(km)", "反舰射程(km)", "反导射程(km)", 
                   "最小对空射程(km)", "最小对直升机射程(km)",	"最小对地射程(km)", "最小反舰射程(km)", "最小反导射程(km)",
-                  "火", "口径", "武器类型", "TypeArme"
+                  "火", "口径", "武器类型", "TypeArme", "GUID"
                   #武器类型可选关键词： 
                   #     射后不理， 手动曲射， 自动曲射， 手动直射，自动直射， 步兵， 飞机， 
                   #     高爆，重机枪，枪
@@ -260,7 +264,7 @@ def WriteTAmmuChangesFromDF(df, i):
                 else:
                     if ("Hash" in key):
                         RBB.checkHashValue(value)
-                    elif key in ["火", "口径", "武器类型","TypeArme"]:
+                    elif key in ["火", "口径", "武器类型","TypeArme", "GUID"]:
                         pass
                     else:
                         RBB.checkNumber(value)
@@ -331,6 +335,10 @@ def WriteTAmmuChangesFromDF(df, i):
            elif "枪" in 武器类型:
                tAmmuChanges += RBB.TAmmuChangesArme(ammoType = "Bullet")    
                ammoTypeSet = True
+           elif "小口径机炮" in 武器类型:
+               tAmmuChanges += RBB.TAmmuChangesArme(ammoType = "Autocannon")  
+               print("Weapon to be changed to TypeArme 2")
+               ammoTypeSet = True
                
 
                
@@ -353,10 +361,19 @@ def WriteTAmmuChangesFromDF(df, i):
         tAmmuChanges += RBB.TAmmuChanges(Name = ["LocalisationHash", directValues["新武器Hash值"]])
         
     if directValues["TypeArme"]:
-        tAmmuChanges += RBB.TAmmuChanges(Name = [RBB.VariableTypeHash, RBB.TAmmuTypeArme[directValues["TypeArme"]]])
+        tAmmuChanges += RBB.TAmmuChanges(TypeArme = [RBB.VariableTypeHash, RBB.TAmmuTypeArme[directValues["TypeArme"]]])
+        
+    if directValues["GUID"]:
+        tAmmuChanges += RBB.TAmmuChanges(DescriptorId = ["Guid", directValues["GUID"]])
         
     if directValues["初速度"]:
         tAmmuChanges += RBB.TAmmuChanges(FX_vitesse_de_depart = [RBB.VariableTypeFloat, directValues["初速度"]])
+
+    if directValues["摩擦力"]:
+        tAmmuChanges += RBB.TAmmuChanges(FX_frottement = [RBB.VariableTypeFloat, directValues["摩擦力"]])
+        
+    if directValues["噪音"]:
+        tAmmuChanges += RBB.TAmmuChanges(NoiseDissimulationMalus = [RBB.VariableTypeFloat, directValues["噪音"]])
         
     if directValues["散布角"]:
         tAmmuChanges += RBB.TAmmuChanges(AngleDispersion = [RBB.VariableTypeFloat, directValues["散布角"]])
@@ -369,6 +386,39 @@ def WriteTAmmuChangesFromDF(df, i):
     return tAmmuChanges
 
 
+def WriteTMountedChangesFromDF(df,i):
+    directKeys = ["特效标签", "SalvoStockIndex","UI格子优先级","稳定器改动"]
+    directValues = {}
+    tMountedChanges = ""
+    for key in directKeys:
+        directValues[key] = None
+        if key in df.keys():
+            value = df[key][i]
+            if not pandas.isna(value):   
+                if key=="稳定器改动":
+                    if value not in ["移除","新增"]:
+                        raise ValueError("稳定器改动 argument has to be 移除 or 新增")
+                else:
+                    RBB.intCheck(key = value)
+                    value = int(value)
+                directValues[key] = value
+    if directValues["特效标签"]:
+        tMountedChanges += RBB.GeneralChanges(EffectTag = [RBB.VariableTypeTableString, 
+                                                           "weapon_effet_tag"+str(directValues["特效标签"])])
+    if directValues["UI格子优先级"]:
+        tMountedChanges += RBB.GeneralChanges(SalvoStockIndex_ForInterface = ["Int32",directValues["UI格子优先级"]])
+ 
+    if directValues["SalvoStockIndex"]:
+        tMountedChanges += RBB.GeneralChanges(SalvoStockIndex = ["Int32",directValues["SalvoStockIndex"]])       
+ 
+    if directValues["稳定器改动"]:
+        stabChange = directValues["稳定器改动"]
+        if stabChange == "移除":
+            tMountedChanges += RBB.GeneralChanges(TirEnMouvement = None)
+        elif stabChange == "新增":
+            tMountedChanges += RBB.GeneralChanges(TirEnMouvement = [RBB.VariableTypeBool, True])
+
+    return tMountedChanges
 #######################################################################################
 #######################################################################################
 

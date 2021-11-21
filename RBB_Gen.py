@@ -74,6 +74,7 @@ def applyCommand(datFile, xmlFiles):
 
 PreOneWayDeploy = "PreOneWayDeploy"
 CreateFinal = "RBB-Create-Final"
+CreateTAmmuFinal = "RBB-CreateTAmmu-Final"
 HashChangeFinal = "RBB-HashChange-Final"
 PreNoReturn ="RBB-PreNoReturn"
 NoReturn_1 = "NoReturn-1"
@@ -86,6 +87,8 @@ def generateCmd(initialNDFName, dire, finalNDFName):
     orderedFileList = [[initialNDFName, 
                             "createHitRollCommands"],
                        [CreateFinal, 
+                            "createTAmmuCommands"],
+                       [CreateTAmmuFinal, 
                             ["RBB-Pre.xml" ,"RBB-Recon.xml", "RBB-Price.xml"]],
                        [PreOneWayDeploy+"-0", 
                             ["RBB-ReferencedBy.xml", "RBB-Bomb.xml"]],
@@ -109,6 +112,8 @@ def generateCmd(initialNDFName, dire, finalNDFName):
             nextFileName = finalNDFName
         if patches == "createHitRollCommands":
             cmd += RC.createHitRollCommands(fileName)
+        elif patches == "createTAmmuCommands":
+            cmd += RC.createTAmmuCommands(fileName, sheet = "舰炮")
         else:
             cmd += applyCommand(fileName+".dat", patches)
             cmd += renameCommand(fileName.lower()+patched+".dat", nextFileName+".dat")
