@@ -121,11 +121,64 @@ def createTAmmuCommands(initialFileName, sheet, xlsx = "RBB.xlsx"):
     fileIndex = 0
     df = pandas.read_excel(xlsx, sheet, header = 1)
     firstTime = []
-    for i in range(df["武器名"].size):
-        新武器Hash值 = df["新武器Hash值"][i]
-        end = (i == df["武器名"].size-1)
-        if not pandas.isna(新武器Hash值):
-            patchName = df["武器名"][i] + "(weapon), weapon hash = " +str(新武器Hash值)
+
+
+    for i in range(df["新建"].size):
+        新建 = df["新建"][i]
+        end = False
+        if not pandas.isna(新建):
+            #####################################################################
+            directKeys = ["武器管理器名","武器管理器SalvoIndex","武器管理器SalvoCount"]       
+            directValues = GEP.checkValues(df, i, directKeys)
+            武器管理器名 = directValues["武器管理器名"]
+            武器管理器SalvoIndex = directValues["武器管理器SalvoIndex"]
+            武器管理器SalvoCount = directValues["武器管理器SalvoCount"]
+            if 武器管理器名 and (武器管理器SalvoIndex != None) and 武器管理器SalvoCount:
+                RBB.GeneralPatch(table = "TWeaponManagerModuleDescriptor", 
+                                 patchName = 武器管理器名+" Weapon Manager", 
+                                 conditions = RBB.GeneralConditions(_ShortDatabaseName = "WeaponDescriptor_Unit_"+武器管理器名), 
+                                 changes = RBB.GeneralChangeDict(prop = "Salves", 
+                                                                 key = int(武器管理器SalvoIndex), 
+                                                                 typeValuePair = [RBB.VariableTypeInt,int(武器管理器SalvoCount)]))
+            ######################################################################
+            directKeys = ["炮塔所属武器Hash值","武器Hash值","新武器Hash值",
+                          "炮塔所属武器名","武器名","炮塔类型",
+                          "炮塔所属武器SalvoIndex",
+                          "静止精度(%)", "移动精度(%)"]
+            directValues = {}
+            #默认或nan时， 值均为None 
+            HashDoesNotMatter = False
+            for key in directKeys:
+                directValues[key] = None
+                if key in df.keys():
+                    value = df[key][i]
+                    if not pandas.isna(value):
+                        if ("(%)" in key):
+                            directValues[key] = value/100
+                        elif ("(m)" in key):
+                            if (value %175) != 0:
+                                raise ValueError("vanilla range is not multiple of 175 at line "+str(i+3)+" in the sheet used")
+                            directValues[key] = int(RBB.Range(value))
+                        elif key in ["炮塔所属武器SalvoIndex"]:
+                                if value == "空值":
+                                    directValues[key] = "null"
+                                else:
+                                    RBB.checkNumber(value)
+                                    directValues[key] = value
+                        else:
+                            if ("Hash" in key):
+                                if value == "HashDoesNotMatter":
+                                    HashDoesNotMatter = True
+                                else:
+                                    RBB.checkHashValue(value)
+                            elif key in ["炮塔所属武器名","武器名","炮塔类型"]:
+                                pass
+                            else:
+                                RBB.checkNumber(value)
+                            directValues[key] = value
+            
+            
+            patchName = str(df["武器名"][i]) + "(weapon), weapon hash = " +str(df["新武器Hash值"][i])
             repeatedCombo = False
             if patchName in firstTime:
                 repeatedCombo = True
@@ -137,6 +190,8 @@ def createTAmmuCommands(initialFileName, sheet, xlsx = "RBB.xlsx"):
                 if df["武器Hash值即唯一条件"][i] == "Y":
                     hashOnly = True
                     
+            
+                    
             if "武器" in df["新建"][i]:
                 GeneralCreatePatch("TAmmunition","Create TAmmu instance: "+patchName)
                 tAmmuConditions = RBB.GeneralConditions(__order = "last")
@@ -147,18 +202,11 @@ def createTAmmuCommands(initialFileName, sheet, xlsx = "RBB.xlsx"):
              
             tAmmuChanges    = GEP.WriteTAmmuChangesFromDF(df, i)
             
-            #if newestWeaponHashConditionOnly:
-            if "UI格子优先级" in df.keys():
-                UI格子优先级 = df["UI格子优先级"][i]
-                if not pandas.isna(UI格子优先级):
-                    RBB.intCheck(UI格子优先级 = UI格子优先级)
-                    RBB.TMountedWeaponPatchChangeUISlotIndex(patchName, 
-                                                             tableConditions = tAmmuConditions, 
-                                                             UIIndex = UI格子优先级)
 
-            RBB.TAmmuPatch(patchName,
-                           tAmmuConditions,
-                           tAmmuChanges)
+            if ("修改现有" in df["新建"][i]) or (("武器" in df["新建"][i])):
+                RBB.TAmmuPatch(patchName,
+                               tAmmuConditions,
+                               tAmmuChanges)
             
             fileNameList, initialFileName, fileIndex, generatedCount = createPatchCountCheck(fileNameList, 
                                                                                              initialFileName, 
@@ -166,24 +214,58 @@ def createTAmmuCommands(initialFileName, sheet, xlsx = "RBB.xlsx"):
                                                                                              "RBB-CreateTAmmu-", 
                                                                                              generatedCount, 
                                                                                              end)
-            if ("武器" in df["新建"][i]) and ("MountedWD" in df["新建"][i]):
-                GeneralCreatePatch("TMountedWeaponDescriptor","Create TMountedWeaponD for TAmmu instance: "+patchName)
+            if ("MountedWD" in df["新建"][i]):
+                GeneralCreatePatch("TMountedWeaponDescriptor","Create TMountedWeaponD instance")
                 tMountedConditions = RBB.GeneralConditions(__order = "last")
                 generatedCount += 1
                 RBB.GeneralPatch("TMountedWeaponDescriptor",
-                                  "TMountedWeaponD for TAmmu instance: "+patchName,
+                                  "Change TMountedWeaponD for TAmmu instance: "+patchName,
                            conditions = tMountedConditions,
                            changes = (GEP.WriteTMountedChangesFromDF(df, i))
                                       +RBB.GeneralChangesObject(prop = "Ammunition", 
                                                                 table = "TAmmunition", 
-                                                                tableConditions = tAmmuConditions))
+                                                                tableConditions = RBB.addTabsBetweenLines(tAmmuConditions,1)))
                 
                 prop = "MountedWeaponDescriptorList"
+                
                 changes=RBB.GeneralChangeDictValueObjectAppend(prop, table = "TMountedWeaponDescriptor", 
                                                        tableConditions=tMountedConditions)
+                if ("添加至现有炮塔" in df["新建"][i]):
+                    if directValues["炮塔所属武器Hash值"]:
+                        炮塔类型 = directValues["炮塔类型"]
+                        if 炮塔类型:
+                            conditions = RBB.GeneralConditionReference(table = "TMountedWeaponDescriptor", 
+                       tableConditions = RBB.GeneralConditionReference(table = "TAmmunition", 
+                       tableConditions = RBB.GeneralConditions(Name = directValues["炮塔所属武器Hash值"])))
+                            if 炮塔类型 =="双轴":
+                                RBB.GeneralPatch(table=RBB.TurretTypeAxis, patchName="Change Turret for TMounted for TAmmu instance: "+patchName, 
+                                         conditions=conditions, changes = changes)
+                            else:
+                                raise ValueError("炮塔类型 not specfied")
+                        else:
+                            raise ValueError("炮塔类型 not specfied")
+                    else:
+                        raise ValueError("现有炮塔 not specfied")
+                elif ("添加至现有特定炮塔" in df["新建"][i]):
+                    if directValues["炮塔所属武器Hash值"]:
+                        炮塔类型 = directValues["炮塔类型"]
+                        if 炮塔类型:
+                            extraTMountedConditions = RBB.GeneralConditions(SalvoStockIndex = directValues["炮塔所属武器SalvoIndex"])
+                            conditions = RBB.GeneralConditionReference(table = "TMountedWeaponDescriptor", 
+                       tableConditions = extraTMountedConditions+
+                                         RBB.GeneralConditionReference(table = "TAmmunition", 
+                       tableConditions = RBB.GeneralConditions(Name = directValues["炮塔所属武器Hash值"])))
+                            if 炮塔类型 =="双轴":
+                                RBB.GeneralPatch(table=RBB.TurretTypeAxis, patchName="Add TMounted for TAmmu instance: "+patchName+" to existing turret", 
+                                         conditions=conditions, changes = changes)
+                            else:
+                                raise ValueError("炮塔类型 not specfied")
+                        else:
+                            raise ValueError("炮塔类型 not specfied")
+                    else:
+                        raise ValueError("现有炮塔 not specfied")
+                    
                 
-                RBB.GeneralPatch(table=RBB.TurretTypeAxis, patchName="", 
-                                 conditions=RBB.GeneralConditions(__order = "last"), changes = changes)
 
                 
                 fileNameList, initialFileName, fileIndex, generatedCount = createPatchCountCheck(fileNameList, 
@@ -193,6 +275,28 @@ def createTAmmuCommands(initialFileName, sheet, xlsx = "RBB.xlsx"):
                                                                                                  generatedCount, 
                                                                                                  end)
                 
+                
+            if "精度" in df["新建"][i]:
+                GeneralCreatePatch("TModernWarfareHitRollRule","Create HitRoll instance")
+                generatedCount += 1
+                
+                realSta = directValues["静止精度(%)"]
+                realMov = directValues["移动精度(%)"]
+                RBB.GeneralPatch(table = "TModernWarfareHitRollRule", 
+                                 patchName = "Set acc for created instance", 
+                                 conditions = RBB.GeneralConditions(__order = "last"), 
+                                 changes = RBB.GeneralChanges(MinimalHitProbability     = ["Float32",0.05],
+                                                              MinimalCritProbability    = ["Float32",0.01],
+                                                              HitProbability            = ["Float32",realSta],
+                                                              HitProbabilityWhileMoving = ["Float32",realMov]))
+            
+                fileNameList, initialFileName, fileIndex, generatedCount = createPatchCountCheck(fileNameList, 
+                                                                                                 initialFileName, 
+                                                                                                 fileIndex, 
+                                                                                                 "RBB-CreateTAmmu-", 
+                                                                                                 generatedCount, 
+                                                                                                 end)
+    end = (i == df["新建"].size-1)       
     fileNameList, initialFileName, fileIndex, generatedCount = createPatchCountCheck(fileNameList, 
                                                                                     initialFileName, 
                                                                                     fileIndex, 
@@ -246,6 +350,14 @@ def createPatchCountCheck(fileNameList, initialFileName, fileIndex, fileName, ge
         fileNameList += initialFileName+".dat\n\n"   
         
     return fileNameList, initialFileName, fileIndex, generatedCount
+
+#压制伤害效果只有2套
+#TSuppressDamagesEffects，一套4个是步兵的，一套4个是载具的
+#物理伤害效果只有1套
+#TPhysicalDamagesEffects, 全体通用
+#士气测试有8套,但99%的单位用1套
+#TModernWarfareTestMoralRollRule
+#def createArmorCommands()
     
     
     

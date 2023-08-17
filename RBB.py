@@ -59,11 +59,15 @@ def WMIAlterDictPatch(language, hashList, valueList, hashRenameList, valueRename
     for i in range(len(hashRenameList)):
         hashI = hashRenameList[i]
         valueI = valueRenameList[i]
+        checkHashValue(hashI)
         if not pandas.isna(valueI):
-            wmiOutput += """            <RenameEntry hash=\""""+hashI+"""\" value=\""""+valueI+""""/>\n"""
+            wmiOutput += """            <RenameEntry hash=\""""+str(hashI)+"""\" value=\""""+valueI+""""/>\n"""
+            
     wmiOutput += """
 		</AlterDictionary>	
     """
+    
+
     
 def HashListRenameWeaponFromTable(sheet, fName = "RBB"):
     df = pandas.read_excel(fName+".xlsx", sheet, header = 1)
@@ -130,6 +134,8 @@ VariableTypeTableString = "TableString"
 TurretTypeUnit = "TTurretUnitDescriptor"
 TurretTypeAxis = "TTurretTwoAxisDescriptor"
 TurretTypeInf  = "TTurretInfanterieDescriptor"
+
+TUniteAuSolDescriptor = "TUniteAuSolDescriptor"
 
 CatPre1980      = "41E22D4DD9380000"
 Cat1981to1985   = "46E22D4DD9380000"
@@ -200,7 +206,7 @@ def generateAmountDictForPrice(unitTypeList, sheet = "价格数量临界线", fN
     
     return ret
 
-unitTypeList = ["迫击炮", "坦克", "侦察车辆","步战车", "导弹坦歼"]
+unitTypeList = ["迫击炮", "坦克", "侦察车辆","步战车", "导弹坦歼", "舰艇", "高炮","重防空", "榴弹炮","火箭炮", "攻击直升机"]
 UnitAmountDict = generateAmountDictForPrice(unitTypeList)
 
 """
@@ -433,14 +439,15 @@ def pricePatchSingle(patchName, unitData, priceFactor = 1, amountFactor = 1):
     
 def GeneralChangeDict(prop, key, typeValuePair):
     ret = ""
+
     ret += ("""<change operation="set" property=\""""+prop+"""\" key=\""""+str(key)+
     """\" type=\""""+typeValuePair[0]+"""\">"""+str(typeValuePair[1])+
     """</change>\n	   	   	""")
+    
     return ret
 
 def GeneralChangeDictValueObject(prop, key, table, tableConditions):
     ret = ""
-
     ret += ("""<change operation=\"set\" property=\""""+prop+"""\" key=\""""+str(key)+
     """\" type= \"ObjectReference\">"""+"""
                 <reference table=\""""+table+"""\">
@@ -453,6 +460,28 @@ def GeneralChangeDictValueObject(prop, key, table, tableConditions):
 
     return ret
 
+def GeneralChangeDictValueObjectDelete(prop, key):
+    ret = ""
+    ret += ("""<change operation=\"delete\" property=\""""+prop+"""\" key=\""""+str(key)+
+    """\" ></change>\n	   	   	""")
+                
+
+    return ret
+
+def GeneralChangeDictClear(prop):
+    ret = ""
+    ret += """<change property=\""""+str(prop)+"""\" operation="clear" />\n	   	   	"""
+    return ret
+
+def GeneralChangeDictAppend(prop, typeValuePair):
+    ret = ""
+    
+    ret += ("""<change operation="append" property=\""""+prop+"""\" type=\""""+typeValuePair[0]+"""\">"""+str(typeValuePair[1])+
+    """</change>\n	   	   	""")
+
+    return ret
+
+
 def GeneralChangeDictValueObjectAppend(prop, table, tableConditions):
     ret = ""
     ret += ("""<change operation=\"append\" property=\""""+prop+
@@ -464,6 +493,25 @@ def GeneralChangeDictValueObjectAppend(prop, table, tableConditions):
 				</reference>
             </change>\n	   	   	""")
     return ret
+
+def GeneralChangeDictValueObjectAppendKey(prop, keyType, key, table, tableConditions):
+    ret = ""
+    ret += ("""<change operation=\"append\" property=\""""+prop+"\" type=\"map\">"+
+            """
+                <map>
+					<key type=\""""+keyType+"\">"+key+"</key>"+"""
+                    <value type="ObjectReference">"""+
+                """
+                        <reference table=\""""+table+"""\">
+        					<matchconditions>
+                                """+addTabsBetweenLines(string = tableConditions, tabCount = 5)+"""
+        					</matchconditions>
+        				</reference>
+                    </value>
+                </map>    
+            </change>\n	   	   	""")
+    return ret
+        
         
 def GeneralChangeDictInDict(prop, keyOut, keyIn, typeValuePair):
    ret = ""
@@ -478,13 +526,23 @@ def GeneralChangeDictInDict(prop, keyOut, keyIn, typeValuePair):
 
 
 
-def GeneralPatch(table, patchName, conditions, changes):
+def GeneralPatch(table, patchName, conditions, changes, path = "everything"):
     global xmlOutput
-        
+    
+    if path == "everything":
+        path = "pc\\ndf\patchable\gfx\everything.ndfbin"
+    elif path == "camera":
+        path = "pc\\ndf\patchable\misc\\basecamera.ndfbin"
+    elif path == "constant":
+        path = "pc\\ndf\patchable\gfx\gdconstanteoriginal.ndfbin"
+    else:
+        raise ValueError("Uncategorized path: "+str(path))
+    
+    
     out = """
     
-    <!-- change property of PatchName -->
-   	<ndfpatch ndf="pc\\ndf\patchable\gfx\everything.ndfbin" table=\""""+table+"""\" name="PatchName">
+    <!-- Patch: PatchName -->
+   	<ndfpatch ndf=\""""+path+"""\" table=\""""+table+"""\" name="PatchName">
        	<matchconditions>
            	"""+conditions+"""
    		</matchconditions>
@@ -514,7 +572,7 @@ def TAmmuPatch(patchName, conditions, changes):
     out = out.replace("PatchName", patchName)
     xmlOutput += out
 
-maxLength = 150#140 max except model file name condition
+maxLength = 185#140 max except model file name condition
 def AddSpaceTo2Var(prefix, variable, connec, value, suffix):
     totLength = (len(prefix) + len(variable) + len(connec) + len(str(value)) + len(suffix))
     if totLength <= maxLength:
@@ -523,7 +581,7 @@ def AddSpaceTo2Var(prefix, variable, connec, value, suffix):
             space +=" "
         connec = connec[:-1] + space + connec[-1]
     else:
-        raise ValueError("The max length is set too short")
+        raise ValueError("The max length is set too short, current length = "+str(totLength))
     return prefix + variable+ connec + str(value) + suffix
 
 def AddSpaceTo3Var(prefix, variable, connec1, vType, connec2, value, suffix):
@@ -559,7 +617,9 @@ def GeneralConditionReference(table, tableConditions):
 				<matchconditions>
                     """+addTabsBetweenLines(string = tableConditions, tabCount = 2)+"""
 				</matchconditions>
-			</matchcondition>"""
+			</matchcondition>
+            
+            """
     return ret
 
 def GeneralConditionReferencedBy(table, tableConditions):
@@ -568,7 +628,9 @@ def GeneralConditionReferencedBy(table, tableConditions):
 				<matchconditions>
                     """+addTabsBetweenLines(string = tableConditions, tabCount = 2)+"""
 				</matchconditions>
-			</matchcondition>"""
+			</matchcondition>
+            
+            """
     return ret
 
 def GeneralChangesObject(prop, table, tableConditions):
@@ -588,14 +650,25 @@ def GeneralChangesObject(prop, table, tableConditions):
 
 
 def accInputCheck(acc):
-    if acc[0] <0.05 or acc[0]>1:
-        raise ValueError("stationary acc[0] must be in interval [0.05,1]")
-    if acc[1] > acc[0]:
-        raise ValueError("stationary acc[0] must >= movement acc[1]")
-    if acc[1] <0.05:
-        raise ValueError("movement acc[1] must >=0.05")
-    if int(acc[0]*100)%5 != 0 or int(acc[1]*100)%5 != 0:
-        raise ValueError("acc must be multiple of 0.05: sta = " + str(acc[0])+", mov = "+str(acc[1]))
+    if acc[0] == "空值" and acc[1] == "空值":
+        #print("This acc is null acc.")
+        pass
+    else:
+        if acc[0] <0.01 or acc[0]>1:
+            raise ValueError("stationary acc[0] must be in interval [0.01,1]")
+        if acc[1] > acc[0]:
+            raise ValueError("stationary acc[0] must >= movement acc[1]")
+        if acc[1] <0.01:
+            raise ValueError("movement acc[1] must >=0.01")
+            
+        if acc[0] <= 0.05:
+            if (acc[0] not in [0.01,0.02,0.03,0.04, 0.05]) or (acc[1] not in [0.01,0.02,0.03,0.04, 0.05]):
+                raise ValueError("acc smaller than or euqal to 0.05 must be multiple of 0.01: sta = " + str(acc[0])+", mov = "+str(acc[1]))
+        else:
+            if int(acc[0]*100)%5 != 0 or int(acc[1]*100)%5 != 0:
+                raise ValueError("acc must be multiple of 0.05: sta = " + str(acc[0])+", mov = "+str(acc[1]))
+            elif len(str(acc[0]))>4 or len(str(acc[1]))>4:
+                raise ValueError("acc must be multiple of 0.05: sta = " + str(acc[0])+", mov = "+str(acc[1]))
 
 def TAmmuConditions(acc = None, unitHash = [None,None], **kwargs):
     #5 object reference, the rest = value
@@ -683,6 +756,9 @@ def TAmmuChanges(acc = None, **kwargs):
     ret += GeneralChanges(**kwargs)
     if acc:
         accInputCheck(acc)
+        if (acc[0]=="空值") and (acc[1]=="空值"):
+            acc[0] = "null"
+            acc[1] = "null"
         ret +="""
             <change operation="set" property="HitRollRule">
 				<reference table="TModernWarfareHitRollRule">
@@ -705,8 +781,8 @@ def GameDistanceFor(real_distance_km):
     #xp = [0,  2.5,   12,   25,    60,   160]
     #fp = [0, 2500, 5000, 6000,  8400, 15000]
     
-    xp = [0,  2.5,   12,   30,    60,   160]
-    fp = [0, 2500, 5000, 7000,  9000, 15000]
+    xp = [0,  2.5,   12,    40,     60,   160,   460]
+    fp = [0, 2500, 5000, 12250,  12950, 16750, 23100]
     if not shown:
         distanceScale = ""
         for i in range(len(xp)):
@@ -730,31 +806,33 @@ def TAmmuChangesRange(shipOnly = False,
     ret = ""
     if shipOnly:
         if ground[0]:
-            ret += TAmmuChanges(PorteeMinimaleBateaux    = ["Float32",ground[0]])
+            ret += TAmmuChanges(PorteeMinimale = None,
+                                PorteeMinimaleBateaux    = ["Float32",ground[0]] if ground[0] != "null" else None)
         if ground[1]:
-            ret += TAmmuChanges(PorteeMaximaleBateaux    = ["Float32",ground[1]])  
+            ret += TAmmuChanges(PorteeMaximale = None,
+                                PorteeMaximaleBateaux    = ["Float32",ground[1]] if ground[1] != "null" else None)  
     else:
         if ground[0]:
-            ret += TAmmuChanges(PorteeMinimale           = ["Float32",ground[0]],
-                                PorteeMinimaleBateaux    = ["Float32",ground[0]])
+            ret += TAmmuChanges(PorteeMinimale           = ["Float32",ground[0]] if ground[0] != "null" else None,
+                                PorteeMinimaleBateaux    = ["Float32",ground[0]] if ground[0] != "null" else None)
         if ground[1]:
-            ret += TAmmuChanges(PorteeMaximale           = ["Float32",ground[1]],
-                                PorteeMaximaleBateaux    = ["Float32",ground[1]])  
+            ret += TAmmuChanges(PorteeMaximale           = ["Float32",ground[1]] if ground[1] != "null" else None,
+                                PorteeMaximaleBateaux    = ["Float32",ground[1]] if ground[1] != "null" else None)  
         
     if helo[0]:
-        ret += TAmmuChanges(PorteeMinimaleTBA        = ["Float32",helo[0]])
+        ret += TAmmuChanges(PorteeMinimaleTBA        = ["Float32",helo[0]] if helo[0] != "null" else None)
     if helo[1]:
-        ret += TAmmuChanges(PorteeMaximaleTBA        = ["Float32",helo[1]])  
+        ret += TAmmuChanges(PorteeMaximaleTBA        = ["Float32",helo[1]] if helo[1] != "null" else None)  
         
     if air[0]:
-        ret += TAmmuChanges(PorteeMinimaleHA         = ["Float32",air[0]])
+        ret += TAmmuChanges(PorteeMinimaleHA         = ["Float32",air[0]] if air[0] != "null" else None)
     if air[1]:
-        ret += TAmmuChanges(PorteeMaximaleHA         = ["Float32",air[1]])  
+        ret += TAmmuChanges(PorteeMaximaleHA         = ["Float32",air[1]] if air[1] != "null" else None)  
         
     if projec[0]:
-        ret += TAmmuChanges(PorteeMinimaleProjectile = ["Float32",projec[0]])
+        ret += TAmmuChanges(PorteeMinimaleProjectile = ["Float32",projec[0]] if projec[0] != "null" else None)
     if projec[1]:
-        ret += TAmmuChanges(PorteeMaximaleProjectile = ["Float32",projec[1]])  
+        ret += TAmmuChanges(PorteeMaximaleProjectile = ["Float32",projec[1]] if projec[1] != "null" else None)  
     return ret
 
 def TAmmuConditionsRange(shipOnly = False,
@@ -805,8 +883,14 @@ def TAmmuConditionsRange(shipOnly = False,
 def TAmmuChangesDisp(disp = [None, None], corr = None):
     ret = ""
     if disp[0]:
+        if disp[0] == "null":
+            ret += TAmmuChanges(DispersionAtMinRange = None)
+        else:
             ret += TAmmuChanges(DispersionAtMinRange = ["Float32", disp[0]])
     if disp[1]:
+        if disp[1] == "null":
+            ret += TAmmuChanges(DispersionAtMaxRange = None)
+        else:
             ret += TAmmuChanges(DispersionAtMaxRange = ["Float32", disp[1]])  
     if corr:
             ret += TAmmuChanges(CorrectedShotDispersionMultiplier = ["Float32", corr])  
@@ -1046,6 +1130,8 @@ def TMountedWeaponPatchChangeUISlotIndex(patchName, tableConditions, UIIndex):
                                          conditions = GeneralConditionReference("TAmmunition", 
                                                                                 tableConditions = tableConditions),
                                          changes = GeneralChanges(SalvoStockIndex_ForInterface = ["Int32",UIIndex]))
+    
+
 
 def TMountedWeaponPatchChangeStablizer(patchName, tableConditions, stabChange):
     patchName = "所有 " + patchName +" "+stabChange+"稳定器" 
@@ -1079,16 +1165,17 @@ def TAmmuChangesFire(fireSize = None, fireChance = 1):
     return ret
 
 def checkHashLength(locHash):
+    tpe = type(locHash)
     locHash = str(locHash)
     if len(locHash) != 16:
-        raise ValueError("loc Hash must be in length 16")
+        print(tpe)
+        raise ValueError("loc Hash = ("+locHash+") must be in length 16")
         
 def checkHashValue(locHash):
     locHash = str(locHash)
-    if len(locHash) != 16:
-        raise ValueError("loc Hash must be in length 16")
+    checkHashLength(locHash)
     if not set(locHash) <= set("0123456789ABCDEF"):
-        raise ValueError("loc Hash cannot contain characters other than 0-9, A-F")
+        raise ValueError("loc Hash = ("+locHash+") must not contain characters other than 0-9, A-F")
         
 def checkNumber(num):
     if not isinstance(num, numbers.Number):

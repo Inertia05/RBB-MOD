@@ -9,6 +9,7 @@ import pandas
 import numpy as np
 import subprocess
 import os
+import RBB_Utilities as UT
 
 def checkValues(df, i, directKeys):
     directValues = {}
@@ -26,7 +27,7 @@ def checkValues(df, i, directKeys):
                 else:
                     if ("Hash" in key):
                         RBB.checkHashValue(value)
-                    elif key in ["原版武器类型", "原版武器子类型", "武器管理器名"]:
+                    elif key in ["原版武器类型", "原版武器子类型", "武器管理器名", "导弹血量", "导弹DBName", "导弹尺寸"]:
                         pass
                     else:
                         RBB.checkNumber(value)
@@ -64,42 +65,103 @@ def WriteTAmmuPatchFromTable(sheet, typeArme = None, xlsx = "RBB.xlsx", newestWe
             tAmmuChanges    = WriteTAmmuChangesFromDF(df, i)
             
             #if newestWeaponHashConditionOnly:
-            if "UI格子优先级" in df.keys():
-                UI格子优先级 = df["UI格子优先级"][i]
-                if not pandas.isna(UI格子优先级):
-                    RBB.intCheck(UI格子优先级 = UI格子优先级)
-                    RBB.TMountedWeaponPatchChangeUISlotIndex(patchName, 
-                                                             tableConditions = tAmmuConditions, 
-                                                             UIIndex = UI格子优先级)
+            TMountedChanges = WriteTMountedChangesFromDF(df,i)
+            if TMountedChanges != "":
+                RBB.GeneralPatch(table = "TMountedWeaponDescriptor", patchName = "TMountedWeapon for Unit"+df["武器名"][i], 
+                                 conditions = RBB.GeneralConditionReference("TAmmunition", 
+                                                                        tableConditions = tAmmuConditions), 
+                                 changes = TMountedChanges)
+            
+
 
             RBB.TAmmuPatch(patchName,
                            tAmmuConditions,
                            tAmmuChanges)
+            
+            
+            
+           
+
+
             if repeatedCombo:
                 if "武器Hash值即唯一条件" in df.keys():
                     if df["武器Hash值即唯一条件"][i] == "Y":
                         print("Warning: repeated Weapon Name/Weapon Hash combo at line "+str(i+3)+" in sheet = "+sheet)
             
-
-            if "稳定器改动" in df.keys():
-                稳定器改动 = df["稳定器改动"][i]
-                if not pandas.isna(稳定器改动):
-                    RBB.TMountedWeaponPatchChangeStablizer(patchName, 
-                                                           tableConditions = tAmmuConditions, 
-                                                           stabChange = 稳定器改动)
                     
-            directKeys = ["武器管理器名","武器管理器SalvoIndex","武器管理器SalvoCount"]       
+            directKeys = ["武器管理器名","武器管理器SalvoIndex","武器管理器SalvoCount", "导弹加速度", "导弹最大速度", "导弹血量", "导弹DBName", "导弹尺寸"]       
             directValues = checkValues(df, i, directKeys)
             武器管理器名 = directValues["武器管理器名"]
             武器管理器SalvoIndex = directValues["武器管理器SalvoIndex"]
             武器管理器SalvoCount = directValues["武器管理器SalvoCount"]
             if 武器管理器名 and (武器管理器SalvoIndex != None) and 武器管理器SalvoCount:
+                if "WeaponDescriptor_Unit_" not in 武器管理器名:
+                    武器管理器名 = "WeaponDescriptor_Unit_" + 武器管理器名
+                    
                 RBB.GeneralPatch(table = "TWeaponManagerModuleDescriptor", 
                                  patchName = 武器管理器名+" Weapon Manager", 
-                                 conditions = RBB.GeneralConditions(_ShortDatabaseName = "WeaponDescriptor_Unit_"+武器管理器名), 
+                                 conditions = RBB.GeneralConditions(_ShortDatabaseName = 武器管理器名), 
                                  changes = RBB.GeneralChangeDict(prop = "Salves", 
                                                                  key = int(武器管理器SalvoIndex), 
                                                                  typeValuePair = [RBB.VariableTypeInt,int(武器管理器SalvoCount)]))
+                
+            if directValues["导弹加速度"] or directValues["导弹最大速度"]:
+                 missileCondition = RBB.GeneralConditionReferencedBy(table = "TUniteDescriptor", 
+                                                                     tableConditions = 
+                                    RBB.GeneralConditionReferencedBy(table = "TAmmunition", 
+                                                                     tableConditions = tAmmuConditions))
+                 changes = ""
+                 if directValues["导弹加速度"]:
+                     changes += RBB.GeneralChanges(MaxAcceleration = [RBB.VariableTypeFloat, directValues["导弹加速度"]])
+                 if directValues["导弹最大速度"]:
+                     changes += RBB.GeneralChanges(Maxspeed = [RBB.VariableTypeFloat, directValues["导弹最大速度"]])
+                 RBB.GeneralPatch(table = "TMouvementHandler_GuidedMissileDescriptor", 
+                                  patchName = "Change Missile acceleration/speed for "+df["武器名"][i], 
+                                  conditions = missileCondition, 
+                                  changes = changes)
+                 
+            if directValues["导弹尺寸"]:
+                if directValues["导弹DBName"]:
+                    导弹DBName = directValues["导弹DBName"]
+                    RBB.GeneralPatch(table = "TUniteDescriptor", 
+                                     patchName = "Set HitRoll size for "+导弹DBName, 
+                                     conditions = UT.ConditionDBName(导弹DBName), 
+                                     changes = RBB.GeneralChanges(HitRollSizeModifier = [RBB.VariableTypeFloat, directValues["导弹尺寸"]]))
+                else:
+                    raise ValueError("Missing 导弹DBName for given 导弹尺寸")
+                 
+            if directValues["导弹血量"]:
+                导弹血量 = directValues["导弹血量"]
+                if 导弹血量 == "新增":
+                    
+                    
+                    tableConditionUp1 = RBB.GeneralConditionReferencedBy(table = "TUniteDescriptor", 
+                                                                         tableConditions = RBB.GeneralConditions(_ShortDatabaseName = "Descriptor_Missile_AGM84_Harpoon"))
+                    
+                    tableConditions = RBB.GeneralConditions(ControllerName = "DamageController")+tableConditionUp1
+                    RBB.GeneralPatch(table = "TUniteDescriptor", 
+                                     patchName = "Add HP for Missile", 
+                                     conditions = RBB.GeneralConditionReferencedBy(table = "TAmmunition", 
+                                                                                   tableConditions = tAmmuConditions), 
+                                     changes = RBB.GeneralChangeDictValueObjectAppendKey(prop = "Modules", 
+                                                                                         keyType = "TableString", 
+                                                                                         key = "Damage", 
+                                                                                         table = "TModuleSelector", 
+                                                                                         tableConditions = tableConditions)+
+                                               RBB.GeneralChangeDictValueObject(prop = "Modules", 
+                                                                                key = "Position", 
+                                                                                table = "TPositionModuleDescriptor", 
+                                                                                tableConditions = RBB.GeneralConditions(Radius = 130,
+                                                                                                                        InGeoDb = True,
+                                                                                                                        AddToHexagonMap = "null"))+
+                                               RBB.GeneralChangeDictValueObject(prop = "Modules", #flags module are categorized, SSM use one, other missile use one
+                                                                                key = "Flags", 
+                                                                                table = "TFlagsModuleDescriptor", 
+                                                                                tableConditions = tableConditionUp1))
+                    
+                
+                
+            
                 
                 
 def WriteTAmmuConditionsFromDF(df, i, hashOnly = True, newestWeaponHashConditionOnly = False):
@@ -111,7 +173,7 @@ def WriteTAmmuConditionsFromDF(df, i, hashOnly = True, newestWeaponHashCondition
                   "武器Hash值",  "原版静止精度(%)", "原版移动精度(%)","原版HEAT", "原版KE", "新武器Hash值",
                   "原版连发数", "原版面板连发数", "原版齐射数", "原版短装填", "原版短装填Fx", "原版长装填","原版瞄准时间",
                   "原版初速度",
-                  "原版武器类型","原版武器子类型", "原版口径"]
+                  "原版武器类型","原版武器子类型", "原版口径", "原版GUID", "原版TypeArme"]
     directValues = {}
     #默认或nan时， 值均为None 
     HashDoesNotMatter = False
@@ -132,11 +194,15 @@ def WriteTAmmuConditionsFromDF(df, i, hashOnly = True, newestWeaponHashCondition
                             HashDoesNotMatter = True
                         else:
                             RBB.checkHashValue(value)
-                    elif key in ["原版武器类型", "原版武器子类型", "原版口径"]:
+                    elif key in ["原版武器类型", "原版武器子类型", "原版口径","原版GUID", "原版TypeArme"]:
                         pass
                     else:
                         RBB.checkNumber(value)
                     directValues[key] = value
+                    
+    if directValues["原版GUID"]:
+        tAmmuConditions += RBB.TAmmuConditions(DescriptorId = directValues["原版GUID"])
+        return tAmmuConditions
                     
     if newestWeaponHashConditionOnly:
         if directValues["新武器Hash值"]:
@@ -172,7 +238,7 @@ def WriteTAmmuConditionsFromDF(df, i, hashOnly = True, newestWeaponHashCondition
                        shotFxReload  = directValues["原版短装填Fx"], salvoReload = directValues["原版长装填"], 
                        salvoUILength = directValues["原版面板连发数"], salvoLength = directValues["原版连发数"], 
                        shotSimutane = directValues["原版齐射数"], aim = directValues["原版瞄准时间"])
-    
+        
     if directValues["原版HEAT"]:
         tAmmuConditions += RBB.TAmmuConditionsArme("HEAT", directValues["原版HEAT"])
         if directValues["原版KE"]:
@@ -211,6 +277,9 @@ def WriteTAmmuConditionsFromDF(df, i, hashOnly = True, newestWeaponHashCondition
                                                    SmokeDescriptor = "null",
                                                    IsSubAmmunition = "null",
                                                    IgnoreInflammabilityConditions = "null")
+        elif "小口径机炮" in 原版武器子类型:
+            tAmmuConditions += RBB.TAmmuConditions(Arme = 2)
+            
         if "雷达" in 原版武器子类型:
             tAmmuConditions += RBB.TAmmuConditions(Guidance = 1)
         elif "光电" in 原版武器子类型:
@@ -223,6 +292,9 @@ def WriteTAmmuConditionsFromDF(df, i, hashOnly = True, newestWeaponHashCondition
     
     if directValues["原版静止精度(%)"]:
         tAmmuConditions += RBB.TAmmuConditions(acc = [directValues["原版静止精度(%)"],directValues["原版移动精度(%)"]])
+        
+    if directValues["原版TypeArme"]:
+        tAmmuConditions += RBB.TAmmuConditions(TypeArme = RBB.TAmmuTypeArme[directValues["原版TypeArme"]])
 
     
     return tAmmuConditions
@@ -240,7 +312,7 @@ def WriteTAmmuChangesFromDF(df, i):
                   "弹链补给量", "初速度", "散布角","摩擦力","噪音",
                   "对空射程(km)", "对直升机射程(km)", "对地射程(km)", "反舰射程(km)", "反导射程(km)", 
                   "最小对空射程(km)", "最小对直升机射程(km)",	"最小对地射程(km)", "最小反舰射程(km)", "最小反导射程(km)",
-                  "火", "口径", "武器类型", "TypeArme", "GUID"
+                  "火", "口径", "武器类型", "TypeArme", "GUID", "新UI图-对应武器Hash值", "是否换枪模"
                   #武器类型可选关键词： 
                   #     射后不理， 手动曲射， 自动曲射， 手动直射，自动直射， 步兵， 飞机， 
                   #     高爆，重机枪，枪
@@ -256,15 +328,34 @@ def WriteTAmmuChangesFromDF(df, i):
                 if (key == "HE半径") or (key == "压制半径"):
                     directValues[key] = round(value)*52
                 elif ("(%)" in key):
-                    directValues[key] = value/100
+                    if value != "空值":
+                        directValues[key] = value/100
                 elif ("(km)" in key):
-                    directValues[key] = RBB.Range(RBB.GameDistanceFor(value))
+                    if value == "移除":
+                        directValues[key] = "null"
+                    else:
+                        RBB.checkNumber(value)
+                        directValues[key] = RBB.Range(RBB.GameDistanceFor(value))
+                        
                 elif key in ["最小散布", "最大散布"]:
-                    directValues[key] = value/18.2*52#game ui dispersion is auto rounded to int
+                    if value == "移除":
+                        directValues[key] = "null"
+                    else:
+                        directValues[key] = value/18.2*52#game ui dispersion is auto rounded to int
                 else:
                     if ("Hash" in key):
+                        if type(value) != str:
+                            print("Warning: Non-string hash receieved: "+str(value))
+                            value = str(int(value))
+                            digits = len(str(value))
+                            if digits>16:
+                                raise ValueError("loc Hash = ("+str(value)+") must be in length 16")
+                            elif digits<16:
+                                value = "0"*(16-digits)+value
+                                
                         RBB.checkHashValue(value)
-                    elif key in ["火", "口径", "武器类型","TypeArme", "GUID"]:
+
+                    elif key in ["火", "口径", "武器类型","TypeArme", "GUID", "是否换枪模"]:
                         pass
                     else:
                         RBB.checkNumber(value)
@@ -302,23 +393,40 @@ def WriteTAmmuChangesFromDF(df, i):
                tAmmuChanges += RBB.TAmmuChanges(IsFireAndForget = None)
            elif "射后不理" in 武器类型:
                tAmmuChanges += RBB.TAmmuChanges(IsFireAndForget = ["Boolean", True])
+               
+           if "无制导直射" in 武器类型:
+               tAmmuChanges += RBB.TAmmuChanges(ProjectileType  = None)
+           elif "导弹" in 武器类型:
+               tAmmuChanges += RBB.TAmmuChanges(ProjectileType  = [RBB.VariableTypeUInt, 5],
+                                                FX_tir_sans_physic = [RBB.VariableTypeBool, True])
+           elif "炸弹" in 武器类型:
+               tAmmuChanges += RBB.TAmmuChanges(ProjectileType  = [RBB.VariableTypeUInt, 4])
+
+               
            if "手动曲射" in 武器类型:
                tAmmuChanges += RBB.TAmmuChanges(TirIndirect = [RBB.VariableTypeBool, True])
-               tAmmuChanges += RBB.TAmmuChanges(TirReflexe  = [RBB.VariableTypeBool, False])
+               tAmmuChanges += RBB.TAmmuChanges(TirReflexe  = None)
                tAmmuChanges += RBB.TAmmuChanges(ProjectileType  = [RBB.VariableTypeUInt, 1])
+               tAmmuChanges += RBB.TAmmuChanges(acc = ['空值','空值'])
+               tAmmuChanges += RBB.TAmmuChanges(FX_tir_sans_physic = None)
            elif "自动曲射" in 武器类型:
                tAmmuChanges += RBB.TAmmuChanges(TirIndirect = [RBB.VariableTypeBool, True])
                tAmmuChanges += RBB.TAmmuChanges(TirReflexe  = [RBB.VariableTypeBool, True])
                if (not "步兵" in 武器类型) and (not "飞机" in 武器类型):
                    tAmmuChanges += RBB.TAmmuChanges(ProjectileType  = [RBB.VariableTypeUInt, 2])
+                   tAmmuChanges += RBB.TAmmuChanges(acc = ['空值','空值'])
+                   tAmmuChanges += RBB.TAmmuChanges(FX_tir_sans_physic = None)
            elif "自动直射" in 武器类型:
-               tAmmuChanges += RBB.TAmmuChanges(TirIndirect = [RBB.VariableTypeBool, False])
+               tAmmuChanges += RBB.TAmmuChanges(TirIndirect = None)
                tAmmuChanges += RBB.TAmmuChanges(TirReflexe  = [RBB.VariableTypeBool, True])
            elif "手动直射" in 武器类型:
-               tAmmuChanges += RBB.TAmmuChanges(TirIndirect = [RBB.VariableTypeBool, False])
-               tAmmuChanges += RBB.TAmmuChanges(TirReflexe  = [RBB.VariableTypeBool, False])          
+               tAmmuChanges += RBB.TAmmuChanges(TirIndirect = None)
+               tAmmuChanges += RBB.TAmmuChanges(TirReflexe  = None)          
            else:
                pass  
+           
+           if "反辐射" in 武器类型:
+               tAmmuChanges += RBB.TAmmuChanges(Guidance = [RBB.VariableTypeInt, 2])
            
            if "非子母弹" in 武器类型:
                tAmmuChanges += RBB.TAmmuChanges(IsSubAmmunition = None)
@@ -337,7 +445,7 @@ def WriteTAmmuChangesFromDF(df, i):
                ammoTypeSet = True
            elif "小口径机炮" in 武器类型:
                tAmmuChanges += RBB.TAmmuChangesArme(ammoType = "Autocannon")  
-               print("Weapon to be changed to TypeArme 2")
+               #print("Weapon to be changed to TypeArme 2")
                ammoTypeSet = True
                
 
@@ -381,13 +489,28 @@ def WriteTAmmuChangesFromDF(df, i):
     
     if directValues["弹链补给量"]:
         tAmmuChanges += RBB.TAmmuChanges(SupplyCost = [RBB.VariableTypeUInt, int(directValues["弹链补给量"])])
+        
+    if directValues["新UI图-对应武器Hash值"]:
+        tAmmuChanges += RBB.GeneralChangesObject(prop = "InterfaceWeaponTexture", table = "TUIResourceTexture", 
+                                                 tableConditions = RBB.GeneralConditionReferencedBy(table = "TAmmunition", 
+                                                                                                    tableConditions = RBB.GeneralConditions(Name = directValues["新UI图-对应武器Hash值"]))+
+                                        """<matchcondition property="__order">last</matchcondition>""")
+        
+    if directValues["是否换枪模"]:
+        是否换枪模 = directValues["是否换枪模"]
+        if 是否换枪模 == "是":
+            tAmmuChanges += RBB.TAmmuChanges(NeedModelChange = [RBB.VariableTypeBool, True])
+        elif 是否换枪模 == "否":
+            tAmmuChanges += RBB.TAmmuChanges(NeedModelChange = None)
+        else:
+            raise ValueError("Unknown input for 是否换枪模 at index = "+str(i))
            
     tAmmuChanges += RBB.TAmmuChangesAOE(HE = [directValues["HE"], directValues["HE半径"]], Sup = [directValues["压制"], directValues["压制半径"]])
     return tAmmuChanges
 
 
 def WriteTMountedChangesFromDF(df,i):
-    directKeys = ["特效标签", "SalvoStockIndex","UI格子优先级","稳定器改动"]
+    directKeys = ["特效标签", "SalvoStockIndex","UI格子优先级","稳定器改动", "AnimateOne"]
     directValues = {}
     tMountedChanges = ""
     for key in directKeys:
@@ -398,17 +521,19 @@ def WriteTMountedChangesFromDF(df,i):
                 if key=="稳定器改动":
                     if value not in ["移除","新增"]:
                         raise ValueError("稳定器改动 argument has to be 移除 or 新增")
+                elif key in ["AnimateOne"]:
+                    pass
                 else:
                     RBB.intCheck(key = value)
                     value = int(value)
                 directValues[key] = value
-    if directValues["特效标签"]:
+    if directValues["特效标签"] != None:
         tMountedChanges += RBB.GeneralChanges(EffectTag = [RBB.VariableTypeTableString, 
                                                            "weapon_effet_tag"+str(directValues["特效标签"])])
-    if directValues["UI格子优先级"]:
+    if directValues["UI格子优先级"] != None:
         tMountedChanges += RBB.GeneralChanges(SalvoStockIndex_ForInterface = ["Int32",directValues["UI格子优先级"]])
  
-    if directValues["SalvoStockIndex"]:
+    if directValues["SalvoStockIndex"] != None:
         tMountedChanges += RBB.GeneralChanges(SalvoStockIndex = ["Int32",directValues["SalvoStockIndex"]])       
  
     if directValues["稳定器改动"]:
@@ -417,6 +542,11 @@ def WriteTMountedChangesFromDF(df,i):
             tMountedChanges += RBB.GeneralChanges(TirEnMouvement = None)
         elif stabChange == "新增":
             tMountedChanges += RBB.GeneralChanges(TirEnMouvement = [RBB.VariableTypeBool, True])
+            
+    if directValues["AnimateOne"]:
+        if directValues["AnimateOne"] == "Y":
+            tMountedChanges += RBB.GeneralChanges(AnimateOnlyOneSoldier = [RBB.VariableTypeBool, True])
+        
 
     return tMountedChanges
 #######################################################################################
@@ -461,7 +591,7 @@ def WriteTTypeUnitConditionsFromDF(df, i, hashOnly):
 def WriteUnitChangesFromDF(df, i):
     unitChanges = ""
     amountKeys = ["基础数量(菜鸟)", "基础数量(受训)", "基础数量(硬汉)", "基础数量(老兵)", "基础数量(精英)"]
-    directKeys = ["价格", "年代", "单位类型","原型", "卡数"] + amountKeys
+    directKeys = ["价格", "年代", "单位类型","原型", "卡数","工厂索引","隐蔽值", "单位DBName","视野模块归类"] + amountKeys
     
     amountChangesSet = False
     directValues = {}
@@ -470,10 +600,31 @@ def WriteUnitChangesFromDF(df, i):
         if key in df.keys():
             value = df[key][i]
             if not pandas.isna(value):   
+                if key == "隐蔽值":
+                    if value not in [0.5, 0.6, 0.7, 0.75, 0.8, 0.9, 1, 1.2, 1.25, 1.5, 1.75, 2, 2.5, 3]:
+                        raise ValueError("隐蔽值 = "+str(value)+" do not exist")
+                    elif value in [1,2,3]:
+                        value = int(value)
+                elif key == "工厂索引":
+                    RBB.intCheck(工厂索引 = value)
+                    value = int(value)
+                
                 directValues[key] = value
+                
+    
+    if directValues["视野模块归类"]:
+        unitChanges += UT.ChangeUnitModuleByUnitDBName(directValues["视野模块归类"],moduleKey = "ScannerConfiguration")
                 
     if directValues["卡数"]:
         unitChanges += RBB.GeneralChanges(MaxPacks = [RBB.VariableTypeUInt, int(directValues["卡数"])])
+        
+    if directValues["工厂索引"]:
+        unitChanges += RBB.GeneralChanges(Factory = ["Int32",directValues["工厂索引"]])
+        
+    if directValues["隐蔽值"]:
+        unitChanges += RBB.GeneralChangeDictValueObject(prop = "Modules", key = "Visibility", table = "TModuleSelector", 
+                                                        tableConditions = RBB.GeneralConditionReference(table = "TVisibilityModuleDescriptor", 
+                                                                                                        tableConditions = RBB.GeneralConditions(UnitStealthBonus = directValues["隐蔽值"])))
               
     if directValues["价格"]:   
         price = int(directValues["价格"])
@@ -543,7 +694,7 @@ FC = FilterChange()
 
 def WriteTTypeUnitChangesFromDF(df, i):
     unitChanges = ""
-    directKeys = ["年代", "单位类型", "价格"]
+    directKeys = ["年代", "单位类型", "价格", "CIWS"]
     directValues = {}
     for key in directKeys:
         directValues[key] = None
@@ -568,6 +719,15 @@ def WriteTTypeUnitChangesFromDF(df, i):
                     unitFilterChanges += FC.mainTypeChange(FC.TUnitMainType["MBT:>85"])
         elif 单位类型 in ["主炮坦歼", "导弹坦歼"]:
             pass
+        elif 单位类型 in FC.TUnitMainType.keys():
+            unitFilterChanges += FC.mainTypeChange(FC.TUnitMainType[单位类型])
+    
+    if directValues["CIWS"]:
+        if directValues["CIWS"] == "移除":
+            unitChanges += RBB.GeneralChanges(CIWS = None)
+        else:
+            pass
+        
 
     if directValues["年代"]:
         年代 = directValues["年代"]
@@ -596,7 +756,7 @@ def WriteGeneralPatchFromTable(sheet, dataClass = "TUniteAuSolDescriptor", keyPr
     
     connec = "(关键名称), 关键过滤值 = "
     if keyProperty == "单位Hash值":
-        connec = "(单位), 单位Hash值 = "
+        connec = "(单位), 关键过滤值 = "
     
     for i in range(df[keyProperty].size):
         关键过滤值 = df[keyProperty][i]

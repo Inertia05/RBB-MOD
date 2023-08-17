@@ -62,7 +62,7 @@ RP.RBB.XMLPatch("RBB-TempPatch")
 
 initialNDFName = "NDF_Win"
 patched = "_patched"
-finalNDFName = "RBB-V3.0"
+finalNDFName = "RBB-V3.2"
 def renameCommand(fromFileName, toFileName):
     return """rename """+fromFileName+" "+toFileName+"\n\n\n\n"
 
@@ -72,12 +72,17 @@ def applyCommand(datFile, xmlFiles):
         ret += " "+xml
     return ret+"\n\n"
 
-PreOneWayDeploy = "PreOneWayDeploy"
 CreateFinal = "RBB-Create-Final"
-CreateTAmmuFinal = "RBB-CreateTAmmu-Final"
-HashChangeFinal = "RBB-HashChange-Final"
-PreNoReturn ="RBB-PreNoReturn"
-NoReturn_1 = "NoReturn-1"
+
+PreOneWayDeploy = "RBB-1-PreOneWayDeploy"
+
+HashChangeFinal = "RBB-2-HashChange-Final"
+
+PreNoReturn ="RBB-3-PreNoReturn"
+
+PreCreateTAmmu = "RBB-4-CreateTAmmu-Pre"
+
+NoReturn_1 = "RBB-CreateTAmmu-Final"
 
 dire = """D:
 cd D:\WRD MOD\WGPatcher 2.4\n"""
@@ -87,8 +92,6 @@ def generateCmd(initialNDFName, dire, finalNDFName):
     orderedFileList = [[initialNDFName, 
                             "createHitRollCommands"],
                        [CreateFinal, 
-                            "createTAmmuCommands"],
-                       [CreateTAmmuFinal, 
                             ["RBB-Pre.xml" ,"RBB-Recon.xml", "RBB-Price.xml"]],
                        [PreOneWayDeploy+"-0", 
                             ["RBB-ReferencedBy.xml", "RBB-Bomb.xml"]],
@@ -98,6 +101,8 @@ def generateCmd(initialNDFName, dire, finalNDFName):
                             ["RBB-TAmmuTankGuns.xml","RBB-TAmmuRedeployable.xml","RBB-TUnitRedeployable.xml"]],
                        [PreNoReturn, 
                             ["RBB-TAmmuAllHETankGuns.xml","RBB-Air-HandWritten.xml"]],
+                       [PreCreateTAmmu, 
+                            "createTAmmuCommands"],
                        [NoReturn_1, 
                             ["RBB-TAmmu.xml", "RBB-TAmmuRocketPodReplace.xml"]],
                        ]
@@ -113,7 +118,7 @@ def generateCmd(initialNDFName, dire, finalNDFName):
         if patches == "createHitRollCommands":
             cmd += RC.createHitRollCommands(fileName)
         elif patches == "createTAmmuCommands":
-            cmd += RC.createTAmmuCommands(fileName, sheet = "舰炮")
+            cmd += RC.createTAmmuCommands(fileName, sheet = "新建舰炮")
         else:
             cmd += applyCommand(fileName+".dat", patches)
             cmd += renameCommand(fileName.lower()+patched+".dat", nextFileName+".dat")
@@ -125,6 +130,7 @@ print(generateCmd(initialNDFName, dire, finalNDFName))
     
     
 print(dire+"WGPatcher apply "+finalNDFName+".dat RBB-TempPatch.xml")
+print(RC.createTAmmuCommands(finalNDFName, sheet = "新建舰炮"))
     
     
     
